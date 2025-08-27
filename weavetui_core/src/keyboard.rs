@@ -1,10 +1,11 @@
 use {
     super::event::{Action, ActionKind},
+    crate::kb,
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
     std::{collections::HashMap, str::FromStr},
 };
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 /// A struct that holds key bindings
 ///
 /// The key bindings are stored in a hashmap where the key is a vector of
@@ -43,6 +44,14 @@ impl KeyBindings {
 
     pub fn get(&self, key_events: &[KeyEvent]) -> Option<&Action> {
         self.0.get(key_events)
+    }
+}
+
+impl Default for KeyBindings {
+    fn default() -> Self {
+        Self::new(kb![
+            "<ctrl-c>" => Action::Quit
+        ])
     }
 }
 

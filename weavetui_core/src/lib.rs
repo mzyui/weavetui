@@ -1,3 +1,4 @@
+use downcast_rs::{impl_downcast, Downcast};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
@@ -15,7 +16,115 @@ use ratatui::{
 use tokio::sync::mpsc::UnboundedSender;
 
 use event::Action;
+
+use crate::event::Event;
+
 pub type Children = BTreeMap<String, Box<dyn Component>>;
+
+pub(crate) struct ComponentHandler {
+    c: Box<dyn Component>,
+}
+
+impl ComponentHandler {
+    pub fn for_(component: Box<dyn Component>) -> Self {
+        Self { c: component }
+    }
+
+    pub(crate) fn handle_init(&mut self, area: Size) {
+        init(self.c.as_mut(), area);
+    }
+
+    pub(crate) fn receive_action_handler(&mut self, tx: UnboundedSender<String>) {
+        receive_action_handler(self.c.as_mut(), tx);
+    }
+
+    pub(crate) fn handle_events(&mut self, event: Option<Event>) -> Vec<Action> {
+        handle_event_for(event, self.c.as_mut())
+    }
+
+    pub(crate) fn handle_update(&mut self, action: Action) {
+        update(self.c.as_mut(), &action);
+    }
+
+    pub(crate) fn handle_message(&mut self, message: String) {
+        handle_message(self.c.as_mut(), message);
+    }
+
+    pub(crate) fn handle_draw(&mut self, f: &mut Frame<'_>, area: Rect) {
+        if self.c.is_active() {
+            self.c.draw(f, area);
+        }
+    }
+}
+
+/// Update the component and its childrend recursively, based on a received action.
+fn update<T: Component + ?Sized>(c: &mut T, action: &Action) {
+    if c.is_active() {
+        c.update(action);
+
+        for child in c.get_children().values_mut() {
+            update(child.as_mut(), action);
+        }
+    }
+}
+
+/// Handle a message for a specific component and its children, recursively.
+fn handle_message<T: Component + ?Sized>(c: &mut T, message: String) {
+    if c.is_active() {
+        c.receive_message(message.clone());
+
+        for child in c.get_children().values_mut() {
+            handle_message(child.as_mut(), message.clone());
+        }
+    }
+}
+
+/// Initialize a component and its children recursively.
+fn init<T: Component + ?Sized>(c: &mut T, area: Size) {
+    c.init(area);
+
+    for child in c.get_children().values_mut() {
+        init(child.as_mut(), area);
+    }
+}
+
+/// Set the action handler for a component and its children recursively.
+fn receive_action_handler<T: Component + ?Sized>(c: &mut T, tx: UnboundedSender<String>) {
+    c.register_action_handler(tx.clone());
+
+    for child in c.get_children().values_mut() {
+        receive_action_handler(child.as_mut(), tx.clone());
+    }
+}
+
+/// handle event for a specific component and its children, recursively.
+fn handle_event_for<T: Component + ?Sized>(event: Option<Event>, c: &mut T) -> Vec<Action> {
+    if c.is_active() {
+        let mut actions = vec![];
+
+        let action = match event {
+            Some(Event::Key(key_event)) => c.handle_key_events(key_event),
+            Some(Event::Mouse(mouse_event)) => c.handle_mouse_events(mouse_event),
+            Some(Event::Tick) => c.handle_tick_event(),
+            Some(Event::Render) => c.handle_frame_event(),
+            Some(Event::Paste(ref event)) => c.handle_paste_event(event.clone()),
+            _ => None,
+        };
+
+        if let Some(action) = action {
+            actions.push(action);
+        }
+
+        for child in c.get_children().values_mut() {
+            let child_actions = handle_event_for(event.clone(), child.as_mut());
+            actions.extend(child_actions);
+        }
+
+        actions
+    } else {
+        vec![]
+    }
+}
 
 pub trait ComponentAccessor: Debug {
     /// returns the name of the component
@@ -36,7 +145,6 @@ pub trait ComponentAccessor: Debug {
     /// send a message to through the action handler bus
     fn send_action(&self, action: Action);
 
-    // create a Component as default and active
     #[allow(clippy::wrong_self_convention)]
     fn as_active(self) -> Self
     where
@@ -47,7 +155,9 @@ pub trait ComponentAccessor: Debug {
     fn get_children(&mut self) -> &mut Children;
 }
 
-pub trait Component: Debug + ComponentAccessor {
+impl_downcast!(Component);
+
+pub trait Component: ComponentAccessor + Downcast {
     /// Initialize the component with a specified area if necessary. Usefull for components that
     /// need to performe some initialization before the first render.
     ///

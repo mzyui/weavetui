@@ -41,3 +41,22 @@ macro_rules! kb {
         ]
     };
 }
+
+/// Creates a vector of components.
+///
+/// Each component will be converted into a `Box<dyn Component>`.
+#[macro_export]
+macro_rules! components {
+    ( $( $x:expr $( => $t:ty )* ),* ) => {
+        {
+            let mut temp_vec = Vec::new();
+            $(
+                temp_vec.push(
+                    Box::new($x)
+                        as Box<dyn $crate::Component $( $t + )* >
+                );
+            )*
+            temp_vec
+        }
+    };
+}
