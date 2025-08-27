@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 
 pub mod app;
+pub mod component_manager;
 pub mod event;
 pub mod keyboard;
 pub mod macros;
@@ -21,6 +22,7 @@ use crate::event::Event;
 
 pub type Children = BTreeMap<String, Box<dyn Component>>;
 
+#[derive(Debug)]
 pub(crate) struct ComponentHandler {
     c: Box<dyn Component>,
 }
@@ -31,98 +33,27 @@ impl ComponentHandler {
     }
 
     pub(crate) fn handle_init(&mut self, area: Size) {
-        init(self.c.as_mut(), area);
+        component_manager::init(self.c.as_mut(), area);
     }
 
-    pub(crate) fn receive_action_handler(&mut self, tx: UnboundedSender<String>) {
-        receive_action_handler(self.c.as_mut(), tx);
+    pub(crate) fn receive_action_handler(&mut self, tx: UnboundedSender<Action>) {
+        component_manager::receive_action_handler(self.c.as_mut(), tx);
     }
 
-    pub(crate) fn handle_events(&mut self, event: Option<Event>) -> Vec<Action> {
-        handle_event_for(event, self.c.as_mut())
+    pub(crate) fn handle_events(&mut self, event: &Option<Event>) -> Vec<Action> {
+        component_manager::handle_event_for(event, self.c.as_mut())
     }
 
-    pub(crate) fn handle_update(&mut self, action: Action) {
-        update(self.c.as_mut(), &action);
+    pub(crate) fn handle_update(&mut self, action: &Action) {
+        component_manager::update(self.c.as_mut(), action);
     }
 
-    pub(crate) fn handle_message(&mut self, message: String) {
-        handle_message(self.c.as_mut(), message);
+    pub(crate) fn handle_message(&mut self, message: &str) {
+        component_manager::handle_message(self.c.as_mut(), message);
     }
 
     pub(crate) fn handle_draw(&mut self, f: &mut Frame<'_>, area: Rect) {
-        if self.c.is_active() {
-            self.c.draw(f, area);
-        }
-    }
-}
-
-/// Update the component and its childrend recursively, based on a received action.
-fn update<T: Component + ?Sized>(c: &mut T, action: &Action) {
-    if c.is_active() {
-        c.update(action);
-
-        for child in c.get_children().values_mut() {
-            update(child.as_mut(), action);
-        }
-    }
-}
-
-/// Handle a message for a specific component and its children, recursively.
-fn handle_message<T: Component + ?Sized>(c: &mut T, message: String) {
-    if c.is_active() {
-        c.receive_message(message.clone());
-
-        for child in c.get_children().values_mut() {
-            handle_message(child.as_mut(), message.clone());
-        }
-    }
-}
-
-/// Initialize a component and its children recursively.
-fn init<T: Component + ?Sized>(c: &mut T, area: Size) {
-    c.init(area);
-
-    for child in c.get_children().values_mut() {
-        init(child.as_mut(), area);
-    }
-}
-
-/// Set the action handler for a component and its children recursively.
-fn receive_action_handler<T: Component + ?Sized>(c: &mut T, tx: UnboundedSender<String>) {
-    c.register_action_handler(tx.clone());
-
-    for child in c.get_children().values_mut() {
-        receive_action_handler(child.as_mut(), tx.clone());
-    }
-}
-
-/// handle event for a specific component and its children, recursively.
-fn handle_event_for<T: Component + ?Sized>(event: Option<Event>, c: &mut T) -> Vec<Action> {
-    if c.is_active() {
-        let mut actions = vec![];
-
-        let action = match event {
-            Some(Event::Key(key_event)) => c.handle_key_events(key_event),
-            Some(Event::Mouse(mouse_event)) => c.handle_mouse_events(mouse_event),
-            Some(Event::Tick) => c.handle_tick_event(),
-            Some(Event::Render) => c.handle_frame_event(),
-            Some(Event::Paste(ref event)) => c.handle_paste_event(event.clone()),
-            _ => None,
-        };
-
-        if let Some(action) = action {
-            actions.push(action);
-        }
-
-        for child in c.get_children().values_mut() {
-            let child_actions = handle_event_for(event.clone(), child.as_mut());
-            actions.extend(child_actions);
-        }
-
-        actions
-    } else {
-        vec![]
+        component_manager::handle_draw(self.c.as_mut(), f, area);
     }
 }
 
@@ -137,7 +68,7 @@ pub trait ComponentAccessor: Debug {
     fn set_active(&mut self, active: bool);
 
     /// registers an action handler that can send actions for processing if necessary
-    fn register_action_handler(&mut self, tx: UnboundedSender<String>);
+    fn register_action_handler(&mut self, tx: UnboundedSender<Action>);
 
     /// send a message to through the action handler bus
     fn send(&self, action: &str);
@@ -145,7 +76,7 @@ pub trait ComponentAccessor: Debug {
     /// send a message to through the action handler bus
     fn send_action(&self, action: Action);
 
-    #[allow(clippy::wrong_self_convention)]
+    #[allow(clippy::wrong_self_convention)] // This is a builder-pattern method
     fn as_active(self) -> Self
     where
         Self: Sized;
@@ -233,7 +164,7 @@ pub trait Component: ComponentAccessor + Downcast {
     ///
     /// * `Result<Option<Action>>` - An action to be processed or none.
     #[allow(unused_variables)]
-    fn handle_paste_event(&mut self, message: String) -> Option<Action> {
+    fn handle_paste_event(&mut self, message: &str) -> Option<Action> {
         None
     }
 
@@ -245,12 +176,13 @@ pub trait Component: ComponentAccessor + Downcast {
     #[allow(unused_variables)]
     fn update(&mut self, action: &Action) {}
 
-    /// Receive a custom message, probably from another component.
+    /// Receive a custom event, probably from another component.
     /// # Arguments
     ///
     /// * `message` - A string message to be processed.
     #[allow(unused_variables)]
-    fn receive_message(&mut self, message: String) {}
+    #[allow(unused_variables)]
+    fn on_event(&mut self, message: &str) {}
 
     /// Render the component on the screen. (REQUIRED)
     ///
@@ -308,7 +240,7 @@ pub trait Component: ComponentAccessor + Downcast {
     ///
     /// # Returns
     /// * `Option<&Box<dyn Component>>` - A reference to the child component or none.
-    #[allow(clippy::borrowed_box)]
+    #[allow(clippy::borrowed_box)] // Intentional to allow direct downcasting of the Box
     fn child(&mut self, name: &str) -> Option<&Box<dyn Component>> {
         self.get_children().get(name)
     }

@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use tokio::sync::mpsc::{self, error::TryRecvError};
@@ -11,6 +9,7 @@ use crate::{
     Component, ComponentHandler,
 };
 
+#[derive(Debug)]
 pub struct App {
     tick_rate: f64,
     frame_rate: f64,
@@ -21,13 +20,13 @@ pub struct App {
     mouse: bool,
     paste: bool,
     component_handlers: Vec<ComponentHandler>,
-    action_tx: mpsc::UnboundedSender<String>,
-    action_rx: mpsc::UnboundedReceiver<String>,
+    action_tx: mpsc::UnboundedSender<Action>,
+    action_rx: mpsc::UnboundedReceiver<Action>,
 }
 
 impl Default for App {
     fn default() -> Self {
-        let (action_tx, action_rx) = mpsc::unbounded_channel::<String>();
+        let (action_tx, action_rx) = mpsc::unbounded_channel::<Action>();
         Self {
             last_tick_key_events: Vec::default(),
             keybindings: KeyBindings::default(),
@@ -62,10 +61,8 @@ impl App {
 
     /// Set the components
     pub fn with_components(mut self, components: Vec<Box<dyn Component>>) -> Self {
-        self.component_handlers = components
-            .into_iter()
-            .map(ComponentHandler::for_)
-            .collect::<Vec<_>>();
+        self.component_handlers
+            .extend(components.into_iter().map(ComponentHandler::for_));
         self
     }
 
@@ -103,15 +100,17 @@ impl App {
     }
 
     fn send(&self, action: Action) -> Result<()> {
-        match action {
-            Action::AppAction(cmd) => self.action_tx.send(cmd)?,
-            Action::Key(key) => self.action_tx.send(key)?,
-            action => self.action_tx.send(action.to_string())?,
-        };
+        self.action_tx.send(action)?;
+
+        // match action {
+        //     Action::AppAction(cmd) => self.action_tx.send(cmd)?,
+        //     Action::Key(key) => self.action_tx.send(key)?,
+        //     action => self.action_tx.send(action.to_string())?,
+        // };
         Ok(())
     }
 
-    fn try_recv(&mut self) -> Result<String, TryRecvError> {
+    fn try_recv(&mut self) -> Result<Action, TryRecvError> {
         self.action_rx.try_recv()
     }
 
@@ -166,7 +165,7 @@ impl App {
                 let mut actions = Vec::new();
 
                 for handler in self.component_handlers.iter_mut() {
-                    let component_actions = handler.handle_events(Some(e.clone()));
+                    let component_actions = handler.handle_events(&Some(e.clone()));
                     actions.extend(component_actions);
                 }
 
@@ -176,48 +175,35 @@ impl App {
             }
 
             while let Ok(action) = self.try_recv() {
-                let enum_action = Action::from_str(&action).ok();
-                if let Some(a) = enum_action {
-                    match a {
-                        Action::Quit => self.should_quit = true,
-                        Action::Render => {
-                            tui.draw(|f| {
-                                for handler in self.component_handlers.iter_mut() {
-                                    handler.handle_draw(f, f.area());
-                                }
-                            })?;
-                        }
-                        Action::Tick => {
-                            self.last_tick_key_events.drain(..);
-                        }
-
-                        // Action::Resize(w, h) => {
-                        //     tui.resize(Rect::new(0, 0, w, h))?;
-                        //     tui.draw(|f| {
-                        //         for component in self.components.iter_mut() {
-                        //             if component.is_active() {
-                        //                 component.draw(f, f.area());
-                        //             }
-                        //         }
-                        //     })?;
-                        // }
-                        _ => {}
+                match action {
+                    Action::Quit => self.should_quit = true,
+                    Action::Render => {
+                        tui.draw(|f| {
+                            for handler in self.component_handlers.iter_mut() {
+                                handler.handle_draw(f, f.area());
+                            }
+                        })?;
+                    }
+                    Action::Tick => {
+                        self.last_tick_key_events.drain(..);
                     }
 
-                    for handler in self.component_handlers.iter_mut() {
-                        handler.handle_update(a.clone());
+                    Action::AppAction(ref m) => {
+                        for handler in self.component_handlers.iter_mut() {
+                            handler.handle_message(m.as_str());
+                        }
                     }
-                } else {
-                    // unrecognized action, might be a custom component action
-                    // send it to all components as a raw string
-                    for handler in self.component_handlers.iter_mut() {
-                        handler.handle_message(action.clone());
-                    }
+
+                    _ => {}
+                }
+
+                for handler in self.component_handlers.iter_mut() {
+                    handler.handle_update(&action);
                 }
             }
 
             if self.should_quit {
-                tui.stop();
+                tui.stop()?;
                 break;
             }
         }

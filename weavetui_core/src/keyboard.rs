@@ -19,25 +19,35 @@ pub struct KeyBindings(pub HashMap<Vec<KeyEvent>, Action>);
 
 impl KeyBindings {
     pub fn new<const N: usize>(raw: [(&str, impl Into<ActionKind>); N]) -> Self {
-        let keybindings = raw
-            .into_iter()
-            .map(|(key_str, cmd)| {
-                let cmd: ActionKind = cmd.into();
+        let mut keybindings = HashMap::new();
+        for (key_str, cmd) in raw.into_iter() {
+            let cmd: ActionKind = cmd.into();
 
-                match cmd {
-                    ActionKind::Full(action) => (parse_key_sequence(key_str).unwrap(), action),
-                    ActionKind::Stringified(cmd) => {
-                        let action = Action::from_str(&cmd);
-                        match action {
-                            Ok(action) => (parse_key_sequence(key_str).unwrap(), action),
-                            Err(_) => {
-                                (parse_key_sequence(key_str).unwrap(), Action::AppAction(cmd))
-                            }
-                        }
-                    }
+            match cmd {
+                ActionKind::Full(action) => {
+                    keybindings.insert(parse_key_sequence(key_str).unwrap(), action);
                 }
-            })
-            .collect();
+
+                ActionKind::Stringified(cmd) => {
+                    let action = Action::from_str(&cmd);
+                    match action {
+                        Ok(action) => {
+                            keybindings.insert(parse_key_sequence(key_str).unwrap(), action)
+                        }
+                        Err(_) => keybindings
+                            .insert(parse_key_sequence(key_str).unwrap(), Action::AppAction(cmd)),
+                    };
+                }
+            }
+        }
+
+        // Check for Action::Quit
+        if !keybindings
+            .iter()
+            .any(|(_, action)| *action == Action::Quit)
+        {
+            panic!("Action::Quit is not bound to any key. Consider binding it for graceful exit (e.g., <ctrl-c>).\n");
+        }
 
         KeyBindings(keybindings)
     }

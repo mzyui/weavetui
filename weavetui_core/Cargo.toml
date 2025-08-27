@@ -20,6 +20,4 @@ ratatui = "0.29.0"
 anyhow = "1.0.99"
 downcast-rs = "2.0.1"
 
-[[example]]
-name = "simple_component"
-path = "../examples/weavetui_core_simple_component.rs"
+

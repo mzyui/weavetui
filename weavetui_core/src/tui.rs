@@ -48,10 +48,10 @@ pub struct Tui {
 }
 
 impl Tui {
-    pub fn new() -> Result<Self, std::io::Error> {
+    pub fn new() -> anyhow::Result<Self> {
         let tick_rate = 4.0;
         let frame_rate = 60.0;
-        let terminal = ratatui::Terminal::new(Backend::new(io()))?;
+        let terminal = ratatui::Terminal::new(Backend::new(io())).map_err(anyhow::Error::from)?;
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         let cancellation_token = CancellationToken::new();
         let task = tokio::task::spawn(async {});
@@ -118,7 +118,9 @@ impl Tui {
             let mut reader = crossterm::event::EventStream::new();
             let mut tick_interval = tokio::time::interval(tick_delay);
             let mut render_interval = tokio::time::interval(render_delay);
-            _event_tx.send(Event::Init).unwrap();
+            _event_tx
+                .send(Event::Init)
+                .expect("Failed to send Init event");
             loop {
                 let tick_delay = tick_interval.tick();
                 let render_delay = render_interval.tick();
@@ -134,37 +136,37 @@ impl Tui {
                             match evt {
                                 CrosstermEvent::Key(key) => {
                                     if key.kind == KeyEventKind::Press {
-                                        _event_tx.send(Event::Key(key)).unwrap();
+                                        _event_tx.send(Event::Key(key)).expect("Failed to send Key event");
                                     }
                                 },
                                 CrosstermEvent::Mouse(mouse) => {
-                                    _event_tx.send(Event::Mouse(mouse)).unwrap();
+                                    _event_tx.send(Event::Mouse(mouse)).expect("Failed to send Mouse event");
                                 },
                                 CrosstermEvent::Resize(x, y) => {
-                                    _event_tx.send(Event::Resize(x, y)).unwrap();
+                                    _event_tx.send(Event::Resize(x, y)).expect("Failed to send Resize event");
                                 },
                                 CrosstermEvent::FocusLost => {
-                                    _event_tx.send(Event::FocusLost).unwrap();
+                                    _event_tx.send(Event::FocusLost).expect("Failed to send FocusLost event");
                                 },
                                 CrosstermEvent::FocusGained => {
-                                    _event_tx.send(Event::FocusGained).unwrap();
+                                    _event_tx.send(Event::FocusGained).expect("Failed to send FocusGained event");
                                 },
                                 CrosstermEvent::Paste(s) => {
-                                    _event_tx.send(Event::Paste(s)).unwrap();
+                                    _event_tx.send(Event::Paste(s)).expect("Failed to send Paste event");
                                 },
                             }
                         }
                         Some(Err(_)) => {
-                            _event_tx.send(Event::Error).unwrap();
+                            _event_tx.send(Event::Error).expect("Failed to send Error event");
                         }
                         None => {},
                         }
                     },
                     _ = tick_delay => {
-                        _event_tx.send(Event::Tick).unwrap();
+                        _event_tx.send(Event::Tick).expect("Failed to send Tick event");
                     },
                     _ = render_delay => {
-                        _event_tx.send(Event::Render).unwrap();
+                        _event_tx.send(Event::Render).expect("Failed to send Render event");
                     },
                 }
             }
@@ -172,7 +174,7 @@ impl Tui {
     }
 
     /// Stops the Tui event loop.
-    pub fn stop(&self) {
+    pub fn stop(&self) -> anyhow::Result<()> {
         self.cancel();
         let mut counter = 0;
         while !self.task.is_finished() {
@@ -180,40 +182,46 @@ impl Tui {
             counter += 1;
             if counter > 50 {
                 self.task.abort();
+                return Err(anyhow::anyhow!("Tui task did not finish in time, aborted."));
             }
             if counter > 100 {
-                break;
+                return Err(anyhow::anyhow!(
+                    "Tui task did not finish in time, giving up."
+                ));
             }
         }
+        Ok(())
     }
 
     /// Enables cross-term raw mode and enters the alternate screen.
-    pub fn enter(&mut self) -> Result<(), std::io::Error> {
-        crossterm::terminal::enable_raw_mode()?;
-        crossterm::execute!(io(), EnterAlternateScreen, cursor::Hide)?;
+    pub fn enter(&mut self) -> anyhow::Result<()> {
+        crossterm::terminal::enable_raw_mode().map_err(anyhow::Error::from)?;
+        crossterm::execute!(io(), EnterAlternateScreen, cursor::Hide)
+            .map_err(anyhow::Error::from)?;
         if self.mouse {
-            crossterm::execute!(io(), EnableMouseCapture)?;
+            crossterm::execute!(io(), EnableMouseCapture).map_err(anyhow::Error::from)?;
         }
         if self.paste {
-            crossterm::execute!(io(), EnableBracketedPaste)?;
+            crossterm::execute!(io(), EnableBracketedPaste).map_err(anyhow::Error::from)?;
         }
         self.start();
         Ok(())
     }
 
     /// Disables cross-term raw mode and exits the alternate screen.
-    pub fn exit(&mut self) -> Result<(), std::io::Error> {
-        self.stop();
-        if crossterm::terminal::is_raw_mode_enabled()? {
-            self.flush()?;
+    pub fn exit(&mut self) -> anyhow::Result<()> {
+        self.stop()?;
+        if crossterm::terminal::is_raw_mode_enabled().map_err(anyhow::Error::from)? {
+            self.flush().map_err(anyhow::Error::from)?;
             if self.paste {
-                crossterm::execute!(io(), DisableBracketedPaste)?;
+                crossterm::execute!(io(), DisableBracketedPaste).map_err(anyhow::Error::from)?;
             }
             if self.mouse {
-                crossterm::execute!(io(), DisableMouseCapture)?;
+                crossterm::execute!(io(), DisableMouseCapture).map_err(anyhow::Error::from)?;
             }
-            crossterm::execute!(io(), LeaveAlternateScreen, cursor::Show)?;
-            crossterm::terminal::disable_raw_mode()?;
+            crossterm::execute!(io(), LeaveAlternateScreen, cursor::Show)
+                .map_err(anyhow::Error::from)?;
+            crossterm::terminal::disable_raw_mode().map_err(anyhow::Error::from)?;
         }
         Ok(())
     }
@@ -222,12 +230,12 @@ impl Tui {
         self.cancellation_token.cancel();
     }
 
-    pub fn suspend(&mut self) -> Result<(), std::io::Error> {
-        self.exit()
+    pub fn suspend(&mut self) -> anyhow::Result<()> {
+        self.exit().map_err(anyhow::Error::from)
     }
 
-    pub fn resume(&mut self) -> Result<(), std::io::Error> {
-        self.enter()
+    pub fn resume(&mut self) -> anyhow::Result<()> {
+        self.enter().map_err(anyhow::Error::from)
     }
 
     /// Returns the next event from the event channel.
@@ -255,6 +263,6 @@ impl DerefMut for Tui {
 impl Drop for Tui {
     fn drop(&mut self) {
         // Ensure that the terminal is cleaned up when the Tui is dropped
-        self.exit().unwrap();
+        self.exit().expect("Failed to exit Tui cleanly during drop");
     }
 }
