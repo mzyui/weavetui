@@ -1,6 +1,6 @@
 # weavetui
 
-![weavetui Logo/Banner](https://example.com/weavetui_banner.png) <!-- Placeholder for a project banner/logo -->
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=40&duration=1500&pause=1000&center=true&vCenter=true&random=true&width=435&lines=weavetui)](https://git.io/typing-svg)
 
 `weavetui` is the flagship application and primary demonstration of the `weavetui` Text User Interface (TUI) framework. It showcases how to build sophisticated and interactive terminal applications by leveraging the modular design principles provided by `weavetui_core` and the development efficiency offered by `weavetui_derive`.
 
