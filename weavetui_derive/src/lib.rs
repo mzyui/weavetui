@@ -234,18 +234,12 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             impl weavetui_core::Component for #name {
                 fn draw(&mut self, f: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect) {
                     f.render_widget(
-                        ratatui::widgets::Paragraph::new(format!("{area:#?}"))
-                            .wrap(ratatui::widgets::Wrap { trim: false })
-                            .centered()
-                            .block(
-                                ratatui::widgets::Block::bordered()
-                                    .title_top(ratatui::text::Line::from(format!("{} x {}", area.height, area.width)))
-                                    .title_alignment(ratatui::layout::Alignment::Center),
-                            ),
-                        area,
+                        ratatui::widgets::Block::bordered()
+                            .title_top(ratatui::text::Line::from(format!(" {}: {} x {} ", self.name(), area.height, area.width)))
+                            .title_alignment(ratatui::layout::Alignment::Center),
+                        area.inner(ratatui::layout::Margin { horizontal: 1, vertical: 1 })
                     );
-
-           }
+                }
             }
         }
     } else {
@@ -269,6 +263,10 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             fn set_active(&mut self, active: bool) {
                 self._active = active;
                 (self as &mut dyn weavetui_core::Component).on_active_changed(active);
+
+                for child in self.children.values_mut() {
+                    child.set_active(active);
+                }
             }
 
             fn register_action_handler(&mut self, tx: tokio::sync::mpsc::UnboundedSender<String>) {
@@ -302,3 +300,4 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
     expanded.into()
 }
+
