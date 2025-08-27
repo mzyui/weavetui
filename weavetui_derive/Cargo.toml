@@ -1,0 +1,23 @@
+[package]
+name = "weavetui_derive"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "2.0.106", features = ["full"] }
+quote = "1.0.40"
+proc-macro2 = "1.0.101"
+
+[dev-dependencies]
+weavetui_core = { path = "../weavetui_core" }
+ratatui = "0.29.0"
+tokio = { version = "1.47.1", features = ["sync", "rt-multi-thread", "time", "macros"] }
+crossterm = { version = "0.29.0", features = ["event-stream"] }
+anyhow = "1.0.99"
+
+[[example]]
+name = "basic_component"
+path = "../examples/weavetui_derive_basic_component.rs"
