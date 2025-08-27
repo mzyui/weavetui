@@ -1,0 +1,24 @@
+[workspace]
+members = [
+    ".",
+    "weavetui_derive",
+    "weavetui_core",
+]
+
+[package]
+name = "weavetui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crossterm = { version = "0.29.0", features = ["event-stream"] }
+tokio = { version = "1.47.1", features = ["sync", "rt-multi-thread", "time", "macros"] }
+strum = { version = "0.27.2", features = ["derive"] }
+futures-util = "0.3.31"
+tokio-util = "0.7.16"
+ratatui = "0.29.0"
+weavetui_derive = { path = "./weavetui_derive" }
+weavetui_core = { path = "./weavetui_core" }
+anyhow = "1.0.99"
+
+
