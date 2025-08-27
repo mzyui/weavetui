@@ -1,6 +1,6 @@
-# weavetui: A Modern TUI Framework and Application
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&duration=1500&pause=1000&center=true&vCenter=true&width=460&lines=weavetui;A+Modern+TUI+Framework+and+Application)](https://git.io/typing-svg)
 
-![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=40&duration=1500&pause=1000&center=true&vCenter=true&random=true&width=435&lines=weavetui)
+---
 
 `weavetui` is a robust and modular Text User Interface (TUI) framework designed for building sophisticated and interactive terminal applications in Rust. This repository serves as both the primary application showcasing the framework's capabilities and the foundational crates that enable its powerful component-based architecture.
 
@@ -83,7 +83,3 @@ We welcome and encourage contributions from the community! Whether you're lookin
 ## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## 📞 Contact
-
-For questions, suggestions, or collaborations, please open an issue on this repository or reach out to [your-email@example.com](mailto:your-email@example.com).
