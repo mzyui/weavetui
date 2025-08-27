@@ -21,4 +21,12 @@ weavetui_derive = { path = "./weavetui_derive" }
 weavetui_core = { path = "./weavetui_core" }
 anyhow = "1.0.99"
 
+[[example]]
+name = "basic_component"
+path = "examples/basic_component.rs"
+
+[[example]]
+name = "basic_component_derive"
+path = "examples/basic_component_derive.rs"
+
 
