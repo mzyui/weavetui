@@ -810,13 +810,9 @@ dependencies = [
 name = "weavetui_derive"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "crossterm 0.29.0",
  "proc-macro2",
  "quote",
- "ratatui",
  "syn",
- "tokio",
  "weavetui_core",
 ]
 

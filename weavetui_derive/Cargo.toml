@@ -3,7 +3,7 @@ name = "weavetui_derive"
 version = "0.1.0"
 edition = "2024"
 description = "Procedural macro for weavetui components."
-license = "MIT OR Apache-2.0"
+license = "MIT"
 repository = "https://github.com/mzyui/weavetui"
 homepage = "https://github.com/mzyui/weavetui"
 documentation = "https://docs.rs/weavetui_derive"
@@ -18,8 +18,7 @@ syn = { version = "2.0.106", features = ["full"] }
 quote = "1.0.40"
 proc-macro2 = "1.0.101"
 
-[dependencies]
-weavetui_core = { version = "0.1.0" }
+weavetui_core = { version = "0.1.0", path = "../weavetui_core" }
 
 [[example]]
 name = "basic_component"
