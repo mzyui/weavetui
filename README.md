@@ -1,50 +1,89 @@
-# weavetui
+# weavetui: A Modern TUI Framework and Application
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=40&duration=1500&pause=1000&center=true&vCenter=true&random=true&width=435&lines=weavetui)](https://git.io/typing-svg)
+![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=40&duration=1500&pause=1000&center=true&vCenter=true&random=true&width=435&lines=weavetui)
 
-`weavetui` is the flagship application and primary demonstration of the `weavetui` Text User Interface (TUI) framework. It showcases how to build sophisticated and interactive terminal applications by leveraging the modular design principles provided by `weavetui_core` and the development efficiency offered by `weavetui_derive`.
+`weavetui` is a robust and modular Text User Interface (TUI) framework designed for building sophisticated and interactive terminal applications in Rust. This repository serves as both the primary application showcasing the framework's capabilities and the foundational crates that enable its powerful component-based architecture.
 
 ## ✨ Features
 
-*   **Comprehensive Component Integration:** Demonstrates the seamless integration of various UI components (e.g., `Header`, `Sidebar`, `Content`, `Button`, `Footer`) into a cohesive application structure.
-*   **Real-world Application Example:** Provides a practical example of a TUI application, illustrating best practices for component composition, state management, and event handling within the `weavetui` ecosystem.
-*   **Modular and Extensible:** Built upon the `weavetui_core` and `weavetui_derive` crates, ensuring a highly modular, maintainable, and extensible codebase.
-*   **Interactive User Experience:** Designed to offer a responsive and engaging user experience directly within the terminal environment.
+*   **Component-Driven Architecture:** Leverage a declarative, component-based model for building complex UIs with ease.
+*   **Automatic Trait Implementation:** Utilize the `weavetui_derive` procedural macro for automatic implementation of `Component` and `ComponentAccessor` traits, significantly reducing boilerplate.
+*   **Modular Design:** Built with `weavetui_core` as its foundation, ensuring high modularity, maintainability, and extensibility.
+*   **Event Handling System:** A flexible event system for managing keyboard, mouse, and custom events within your TUI applications.
+*   **Real-world Application Example:** The `weavetui` application itself serves as a comprehensive example, demonstrating best practices for component composition, state management, and event handling.
+*   **Interactive User Experience:** Designed to deliver responsive and engaging user experiences directly within the terminal environment.
 
-## 🚀 Quick Start
+## 🚀 Getting Started
 
-To get `weavetui` up and running on your local machine, follow these simple steps:
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites
+
+*   Rust programming language (stable or beta channel recommended). You can install it via `rustup`:
+    ```bash
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    ```
+*   Cargo, Rust's package manager (comes with Rust installation).
+
+### Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/weavetui.git # Replace with actual repository URL
+    git clone https://github.com/your-username/weavetui.git # Replace with your actual repository URL
     cd weavetui
     ```
 
-2.  **Build the application:**
+2.  **Build the project:**
+    This command will compile all crates within the workspace (`weavetui`, `weavetui_core`, `weavetui_derive`).
     ```bash
-    cargo build
+    cargo build --release
     ```
+    Using `--release` is recommended for optimized performance.
 
-3.  **Run the application:**
-    ```bash
-    cargo run
-    ```
+### Running the Application
 
-    This will launch the `weavetui` application in your terminal.
+To launch the `weavetui` example application:
+
+```bash
+cargo run --release
+```
+
+This will compile and run the main `weavetui` application, showcasing the framework's capabilities in your terminal.
 
 ## 📂 Project Structure
 
-This project is organized as a Rust workspace, encompassing the following crates:
+This repository is organized as a Rust workspace, containing the following crates:
 
-*   `weavetui/` (root): The main application crate, responsible for orchestrating the UI and application logic.
-*   `weavetui_core/`: A foundational library defining core TUI traits, components, and utilities.
-*   `weavetui_derive/`: A procedural macro crate that provides the `#[component]` attribute for automatic trait implementation.
+*   `weavetui/` (root): The main application crate that orchestrates the UI and application logic, serving as a practical demonstration of the framework.
+*   `weavetui_core/`: A foundational library defining core TUI traits (`Component`, `ComponentAccessor`), event handling mechanisms, and utility functions.
+*   `weavetui_derive/`: A procedural macro crate providing the `#[component]` attribute for automatic trait implementation, simplifying component creation.
+
+## 🧪 Running Tests
+
+To ensure the stability and correctness of the framework and application, you can run the test suite:
+
+```bash
+cargo test
+```
+
+This command will execute all unit and integration tests across all workspace crates.
 
 ## 🤝 Contributing
 
-We warmly welcome contributions to the `weavetui` project! Whether it's bug fixes, new features, or documentation improvements, your input is valuable. Please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute.
+We welcome and encourage contributions from the community! Whether you're looking to report a bug, suggest an enhancement, or contribute code, please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to get involved.
+
+## 🗺️ Roadmap
+
+*   Enhanced layout management system.
+*   More sophisticated styling and theming capabilities.
+*   Expanded set of pre-built UI components.
+*   Improved accessibility features.
+*   Comprehensive documentation and tutorials.
 
 ## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## 📞 Contact
+
+For questions, suggestions, or collaborations, please open an issue on this repository or reach out to [your-email@example.com](mailto:your-email@example.com).
