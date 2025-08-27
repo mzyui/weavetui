@@ -1,4 +1,4 @@
-use syn::{parse::Parse, LitStr, Token, Type};
+use syn::{LitStr, Token, Type, parse::Parse};
 
 pub struct ChildEntry {
     pub key: LitStr,

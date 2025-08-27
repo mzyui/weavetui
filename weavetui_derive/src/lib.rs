@@ -94,7 +94,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             .any(|f| f.ident.as_ref().is_some_and(|i| i == "_action_tx"))
         {
             named.push(
-                parse_quote! { pub _action_tx: Option<tokio::sync::mpsc::UnboundedSender<String>> },
+                parse_quote! { pub _action_tx: Option<tokio::sync::mpsc::UnboundedSender<Action>> },
             );
         }
     } else if let Fields::Unnamed(FieldsUnnamed {
@@ -111,7 +111,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         named_fields.push(new_children_field);
         named_fields.push(parse_quote! { pub _active: bool });
         named_fields.push(
-            parse_quote! { pub _action_tx: Option<tokio::sync::mpsc::UnboundedSender<String>> },
+            parse_quote! { pub _action_tx: Option<tokio::sync::mpsc::UnboundedSender<Action>> },
         );
         ast.fields = Fields::Named(FieldsNamed {
             brace_token: syn::token::Brace::default(),
@@ -237,8 +237,9 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                         ratatui::widgets::Block::bordered()
                             .title_top(ratatui::text::Line::from(format!(" {}: {} x {} ", self.name(), area.height, area.width)))
                             .title_alignment(ratatui::layout::Alignment::Center),
-                        area.inner(ratatui::layout::Margin { horizontal: 1, vertical: 1 })
+                        area
                     );
+
                 }
             }
         }
@@ -269,19 +270,19 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
 
-            fn register_action_handler(&mut self, tx: tokio::sync::mpsc::UnboundedSender<String>) {
+            fn register_action_handler(&mut self, tx: tokio::sync::mpsc::UnboundedSender<Action>) {
                 self._action_tx = Some(tx);
             }
 
             fn send(&self, action: &str) {
                 if let Some(tx) = &self._action_tx {
-                    let _ = tx.send(action.to_string());
+                    let _ = tx.send(weavetui_core::event::Action::AppAction(action.to_string()));
                 }
             }
 
             fn send_action(&self, action: weavetui_core::event::Action) {
                 if let Some(tx) = &self._action_tx {
-                    let _ = tx.send(action.to_string());
+                    let _ = tx.send(action);
                 }
             }
 
@@ -300,4 +301,3 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
     expanded.into()
 }
-

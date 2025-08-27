@@ -20,6 +20,4 @@ proc-macro2 = "1.0.101"
 
 weavetui_core = { version = "0.1.0", path = "../weavetui_core" }
 
-[[example]]
-name = "basic_component"
-path = "../examples/weavetui_derive_basic_component.rs"
+
