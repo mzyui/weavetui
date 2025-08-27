@@ -1,4 +1,4 @@
-use weavetui_core::{self, kb, tui::Tui};
+use weavetui_core::{Component, ComponentAccessor};
 use weavetui_derive::component;
 
 #[component(default, children("title"=>Header))]
@@ -24,31 +24,13 @@ struct Content {}
     "content" => Content,
     "footer" => Footer,
 ), default)]
-struct Home {
-    title: String,
-    version: String,
-    is_logged_in: bool,
-}
+struct Home {}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // let mut tui = Tui::new()?
-    //     .tick_rate(20.0)
-    //     .frame_rate(30.0)
-    //     .mouse(false)
-    //     .paste(false);
-    //
-    // tui.enter()?;
-    //
-    //
-    // tui.exit()?;
+    let mut home = Home::default().as_active();
+    home.child_mut("footer").unwrap().set_active(false);
 
-    let home = Home::default();
     dbg!(home);
-
-    kb![
-        "<ctrl-c>" => "exit"
-    ];
-
     Ok(())
 }
