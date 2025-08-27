@@ -1,36 +1,46 @@
-use weavetui_core::{Component, ComponentAccessor};
+use ratatui::widgets::Paragraph;
+use weavetui_core::{Component, ComponentAccessor, app::App, components, event::Action, kb};
 use weavetui_derive::component;
 
-#[component(default, children("title"=>Header))]
-struct Footer {}
+#[component()]
+struct Content {
+    content: String,
+}
 
-#[component(default, children("footer"=>Footer))]
-struct Button {}
+impl Component for Content {
+    fn draw(&mut self, f: &mut ratatui::Frame<'_>, area: ratatui::prelude::Rect) {
+        f.render_widget(
+            Paragraph::new(self.content.as_str()),
+            area.inner(ratatui::layout::Margin {
+                horizontal: 1,
+                vertical: 1,
+            }),
+        );
+    }
 
-#[component(default)]
-struct Header {}
-
-#[component(default, children("title"=>Header))]
-struct Sidebar {}
-
-#[component(default, children(
-    "button" => Button,
-))]
-struct Content {}
+    fn on_event(&mut self, message: &str) {
+        self.content = format!("{message:#?}");
+    }
+}
 
 #[component(children(
-    "header" => Header,
-    "sidebar" => Sidebar,
     "content" => Content,
-    "footer" => Footer,
 ), default)]
 struct Home {}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let mut home = Home::default().as_active();
-    home.child_mut("footer").unwrap().set_active(false);
+    let home = Home::default().as_active();
 
-    dbg!(home);
+    let mut app = App::default()
+        .with_components(components![home])
+        .with_keybindings(kb![
+            "<ctrl-c>" => Action::Quit,
+            "<b>" => "app:toggle_feature_x",
+        ]);
+    app.run().await?;
+
+    dbg!(app);
+
     Ok(())
 }
