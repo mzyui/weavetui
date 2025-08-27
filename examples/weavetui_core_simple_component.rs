@@ -13,11 +13,15 @@ use ratatui::{
 #[derive(Debug)]
 pub struct SimpleComponent {
     message: String,
+    children: std::collections::BTreeMap<String, Box<dyn Component>>,
 }
 
 impl Default for SimpleComponent {
     fn default() -> Self {
-        Self { message: "Hello from SimpleComponent!".to_string() }
+        Self {
+            message: "Hello from SimpleComponent!".to_string(),
+            children: std::collections::BTreeMap::new(),
+        }
     }
 }
 
@@ -28,13 +32,8 @@ impl ComponentAccessor for SimpleComponent {
     fn register_action_handler(&mut self, _tx: tokio::sync::mpsc::UnboundedSender<String>) { /* ... */ }
     fn send(&self, _action: &str) { /* ... */ }
     fn send_action(&self, _action: Action) { /* ... */ }
-    fn as_active(self) -> Self { self }
     fn get_children(&mut self) -> &mut std::collections::BTreeMap<String, Box<dyn Component>> {
-        // Return a mutable reference to an empty BTreeMap if no children
-        static mut CHILDREN: Option<std::collections::BTreeMap<String, Box<dyn Component>>> = None;
-        unsafe {
-            CHILDREN.get_or_insert_with(std::collections::BTreeMap::new)
-        }
+        &mut self.children
     }
 }
 
