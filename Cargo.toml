@@ -7,8 +7,19 @@ members = [
 
 [package]
 name = "weavetui"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
+authors = ["Val <alviandtm@gmail.com>"]
+description = "A modern, robust, and modular Text User Interface (TUI) framework for Rust."
+license = "MIT"
+repository = "https://github.com/mzyui/weavetui"
+homepage = "https://github.com/mzyui/weavetui"
+documentation = "https://docs.rs/weavetui"
+keywords = ["tui", "component", "ui", "framework", "weavetui"]
+categories = ["gui", "command-line-interface"]
+
+[lib]
+path = "src/lib.rs"
 
 [dependencies]
 crossterm = { version = "0.29.0", features = ["event-stream"] }
@@ -22,11 +33,7 @@ weavetui_core = { path = "./weavetui_core" }
 anyhow = "1.0.99"
 
 [[example]]
-name = "basic_component"
-path = "examples/basic_component.rs"
-
-[[example]]
-name = "basic_component_derive"
-path = "examples/basic_component_derive.rs"
+name = "weavetui_app"
+path = "examples/weavetui_app.rs"
 
 
