@@ -1,3 +1,8 @@
+//! Application module for `weavetui`.
+//!
+//! This module defines the core `App` structure, which manages the application's lifecycle,
+//! event handling, and component interactions within the TUI environment.
+
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use tokio::sync::mpsc::{self, error::TryRecvError};
@@ -9,6 +14,10 @@ use crate::{
     Component, ComponentHandler,
 };
 
+/// `App` is the main application structure that orchestrates the TUI.
+///
+/// It manages the event loop, handles user input, dispatches actions to components,
+/// and renders the UI.
 #[derive(Debug)]
 pub struct App {
     tick_rate: f64,
@@ -44,6 +53,12 @@ impl Default for App {
 }
 
 impl App {
+    /// Creates a new `App` instance with specified keybindings and initial components.
+    ///
+    /// # Arguments
+    ///
+    /// * `kb` - An array of keybinding tuples, mapping key combinations to action kinds.
+    /// * `components` - A vector of boxed `Component` traits to be managed by the app.
     pub fn new<const N: usize>(kb: [(&str, &str); N], components: Vec<Box<dyn Component>>) -> Self {
         let keybindings = KeyBindings::new(kb);
 
@@ -59,14 +74,30 @@ impl App {
         }
     }
 
-    /// Set the components
+    /// Adds a collection of components to the application.
+    ///
+    /// # Arguments
+    ///
+    /// * `components` - A vector of boxed `Component` traits to be added.
+    ///
+    /// # Returns
+    ///
+    /// The modified `App` instance.
     pub fn with_components(mut self, components: Vec<Box<dyn Component>>) -> Self {
         self.component_handlers
             .extend(components.into_iter().map(ComponentHandler::for_));
         self
     }
 
-    // Set the keybindings
+    /// Sets the keybindings for the application.
+    ///
+    /// # Arguments
+    ///
+    /// * `kb` - An array of keybinding tuples, mapping key combinations to action kinds.
+    ///
+    /// # Returns
+    ///
+    /// The modified `App` instance.
     pub fn with_keybindings<const N: usize>(
         mut self,
         kb: [(&str, impl Into<ActionKind>); N],
@@ -75,30 +106,78 @@ impl App {
         self
     }
 
-    /// Set the tick rate
+    /// Sets the tick rate for the application's event loop.
+    ///
+    /// The tick rate determines how often the application processes events and updates its state.
+    ///
+    /// # Arguments
+    ///
+    /// * `tick_rate` - The desired tick rate in Hertz (Hz).
+    ///
+    /// # Returns
+    ///
+    /// The modified `App` instance.
     pub fn with_tick_rate(mut self, tick_rate: impl Into<f64>) -> Self {
         self.tick_rate = tick_rate.into();
         self
     }
 
-    /// Set the frame rate
+    /// Sets the frame rate for rendering the application's UI.
+    ///
+    /// The frame rate determines how often the application redraws the terminal screen.
+    ///
+    /// # Arguments
+    ///
+    /// * `frame_rate` - The desired frame rate in frames per second (fps).
+    ///
+    /// # Returns
+    ///
+    /// The modified `App` instance.
     pub fn with_frame_rate(mut self, frame_rate: impl Into<f64>) -> Self {
         self.frame_rate = frame_rate.into();
         self
     }
 
-    /// Set the mouse
+    /// Enables or disables mouse event handling for the application.
+    ///
+    /// # Arguments
+    ///
+    /// * `mouse` - `true` to enable mouse support, `false` to disable.
+    ///
+    /// # Returns
+    ///
+    /// The modified `App` instance.
     pub fn with_mouse(mut self, mouse: bool) -> Self {
         self.mouse = mouse;
         self
     }
 
-    /// Set the paste
+    /// Enables or disables paste event handling for the application.
+    ///
+    /// # Arguments
+    ///
+    /// * `paste` - `true` to enable paste support, `false` to disable.
+    ///
+    /// # Returns
+    ///
+    /// The modified `App` instance.
     pub fn with_paste(mut self, paste: bool) -> Self {
         self.paste = paste;
         self
     }
 
+    /// Sends an `Action` to the application's action channel.
+    ///
+    /// This method is used internally to dispatch actions that need to be processed by the `App`
+    /// or its components.
+    ///
+    /// # Arguments
+    ///
+    /// * `action` - The `Action` to send.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
     fn send(&self, action: Action) -> Result<()> {
         self.action_tx.send(action)?;
 
@@ -110,10 +189,24 @@ impl App {
         Ok(())
     }
 
+    /// Attempts to receive an `Action` from the application's action channel without blocking.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the received `Action` or a `TryRecvError` if no action is available.
     fn try_recv(&mut self) -> Result<Action, TryRecvError> {
         self.action_rx.try_recv()
     }
 
+    /// Runs the main application loop.
+    ///
+    /// This asynchronous function initializes the TUI, sets up event handling, and continuously
+    /// processes events (keyboard, mouse, tick, render) and dispatches actions to registered
+    /// components. The loop continues until a `Quit` action is received.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating the success or failure of the application execution.
     pub async fn run(&mut self) -> Result<()> {
         let mut tui = Tui::new()?
             .tick_rate(self.tick_rate)

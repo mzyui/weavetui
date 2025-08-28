@@ -1,3 +1,14 @@
+//! Core library for the `weavetui` TUI framework.
+//! 
+//! This crate defines the fundamental traits and types for building interactive
+//! Text User Interface (TUI) components, including `Component` for rendering
+//! and event handling, and `ComponentAccessor` for managing component properties
+//! and children.
+//! 
+//! It provides the building blocks for the `weavetui` ecosystem, designed to be
+//! used in conjunction with the `weavetui_derive` crate for declarative component
+//! creation.
+
 use downcast_rs::{impl_downcast, Downcast};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -20,6 +31,11 @@ use event::Action;
 
 use crate::event::Event;
 
+/// A type alias for a `BTreeMap` that stores child components.
+///
+/// The keys are `String` representations of the child component names,
+/// and the values are `Box<dyn Component>` trait objects, allowing for
+/// polymorphic storage of different component types.
 pub type Children = BTreeMap<String, Box<dyn Component>>;
 
 #[derive(Debug)]
