@@ -46,7 +46,7 @@ use weavetui_derive::component;
 use weavetui_core::Component;
 
 #[component(default)]
-struct ChildComponent { /* ... */ }
+struct ChildComponent; // Changed to unit struct
 
 #[component(default, children(
     "header" => HeaderComponent,
@@ -55,7 +55,6 @@ struct ChildComponent { /* ... */ }
 ))]
 struct ParentComponent {
     title: String,
-    // The 'children' field is automatically added or managed by the macro
 }
 
 // ParentComponent will have a `children` field (BTreeMap<String, Box<dyn weavetui_core::Component>>)
@@ -64,8 +63,8 @@ struct ParentComponent {
 
 ## 🤝 Contributing
 
-We welcome contributions to `weavetui_derive`! Please refer to the main `weavetui` project's [CONTRIBUTING.md](link-to-contributing-md) for detailed guidelines on how to get involved, report issues, and submit pull requests.
+We welcome contributions to `weavetui_derive`! Please refer to the main `weavetui` project's [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines on how to get involved, report issues, and submit pull requests.
 
 ## 📄 License
 
-This project is licensed under the MIT License. See the [LICENSE](link-to-license-file) file for details.
+This project is licensed under the MIT License. See the [LICENSE](../../LICENSE) file for details.

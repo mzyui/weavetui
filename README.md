@@ -1,8 +1,13 @@
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&duration=1500&pause=1000&center=true&vCenter=true&width=460&lines=weavetui;A+Modern+TUI+Framework+and+Application)](https://git.io/typing-svg)
 
+[![Build Status](https://github.com/weavetui/weavetui/actions/workflows/rust.yml/badge.svg)](https://github.com/weavetui/weavetui/actions/workflows/rust.yml)
+[![crates.io](https://img.shields.io/crates/v/weavetui_core.svg)](https://crates.io/crates/weavetui_core)
+[![crates.io](https://img.shields.io/crates/v/weavetui_derive.svg)](https://crates.io/crates/weavetui_derive)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ---
 
-`weavetui` is a robust and modular Text User Interface (TUI) framework designed for building sophisticated and interactive terminal applications in Rust. This repository serves as both the primary application showcasing the framework's capabilities and the foundational crates that enable its powerful component-based architecture.
+`weavetui` is a modern, robust, and modular **Text User Interface (TUI) framework** for Rust, designed to simplify the development of sophisticated and interactive terminal applications. This repository serves as both the primary application showcasing the framework's capabilities and the foundational crates that enable its powerful component-based architecture.
 
 ## ✨ Features
 
@@ -29,7 +34,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/weavetui.git # Replace with your actual repository URL
+    git clone https://github.com/weavetui/weavetui.git
     cd weavetui
     ```
 
@@ -42,13 +47,13 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Running the Application
 
-To launch the `weavetui` example application:
+To launch the `weavetui` example application (which demonstrates the framework's capabilities):
 
 ```bash
 cargo run --release
 ```
 
-This will compile and run the main `weavetui` application, showcasing the framework's capabilities in your terminal.
+This command compiles and runs the main `weavetui` application, serving as a practical demonstration of the framework's features directly in your terminal.
 
 ## 📂 Project Structure
 
