@@ -33,7 +33,7 @@ weavetui_core = { path = "./weavetui_core" }
 anyhow = "1.0.99"
 
 [[example]]
-name = "weavetui_app"
-path = "examples/weavetui_app.rs"
+name = "counter_app"
+path = "examples/counter_app.rs"
 
 
