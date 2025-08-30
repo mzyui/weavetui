@@ -17,12 +17,12 @@ To use the `#[component]` macro in your `weavetui` project, add `weavetui_derive
 
 ```toml
 [dependencies]
-weavetui_derive = { version = "0.1.0" } # Or specify a path/git dependency for development
+weavetui_derive = { version = "0.1.1" } # Or specify a path/git dependency for development
 ```
 
 ## 📚 Usage
 
-Apply the `#[component]` attribute to your struct definitions. The macro will automatically generate the necessary trait implementations.
+Apply the `#[component]` attribute to your struct definitions. The macro will automatically generate the necessary trait implementations. A practical example of its usage can be found in the `counter_app.rs` example within the main `weavetui` repository.
 
 ### Basic Component
 
@@ -43,10 +43,16 @@ You can declare child components directly within the `#[component]` attribute. T
 
 ```rust
 use weavetui_derive::component;
-use weavetui_core::Component;
+use weavetui_core::Component; // This import might not be strictly necessary for the example, but good for context
 
 #[component(default)]
-struct ChildComponent; // Changed to unit struct
+struct HeaderComponent;
+
+#[component(default)]
+struct FooterComponent;
+
+#[component(default)]
+struct ButtonComponent;
 
 #[component(default, children(
     "header" => HeaderComponent,

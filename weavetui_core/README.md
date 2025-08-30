@@ -17,42 +17,42 @@ This crate is primarily designed to be a dependency for `weavetui` applications 
 
 ```toml
 [dependencies]
-weavetui_core = "0.1.0" # Replace with the latest version or a path/git dependency for development
+weavetui_core = "0.1.1" # Replace with the latest version or a path/git dependency for development
 ```
 
 ## 📚 Examples
 
-While `weavetui_core` provides the underlying traits, its usage is best demonstrated within a `weavetui` application. Here's a glimpse of how components interact:
+While `weavetui_core` provides the underlying traits, its usage is best demonstrated within a `weavetui` application. For more comprehensive and runnable examples, please refer to the `examples` directory in the main `weavetui` repository. Here's a glimpse of how components interact:
 
 ```rust
 use weavetui_core::{
     Component,
     ComponentAccessor,
-    event::Action,
 };
 use ratatui::{
     Frame,
     layout::Rect,
     widgets::{Paragraph, Block, Borders},
 };
-use tokio::sync::mpsc::UnboundedSender; // Added for register_action_handler
+use std::collections::BTreeMap;
 
 // A simple component implementing the core traits
-#[derive(Debug, Default)] // Added Default for easier instantiation
-pub struct MyCustomComponent; // Changed to unit struct
+#[derive(Debug, Default)]
+pub struct MyCustomComponent;
 
 impl ComponentAccessor for MyCustomComponent {
     fn name(&self) -> String { "MyCustomComponent".to_string() }
     fn is_active(&self) -> bool { true }
     fn set_active(&mut self, _active: bool) { /* No-op for simple component */ }
-    fn register_action_handler(&mut self, _tx: UnboundedSender<Action>) { /* No-op for simple component */ }
+    fn area(&self) -> Option<Rect> { None }
+    fn set_area(&mut self, _area: Rect) { /* No-op for simple component */ }
+    fn register_action_handler(&mut self, _tx: tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>) { /* No-op for simple component */ }
     fn send(&self, _action: &str) { /* No-op for simple component */ }
-    fn send_action(&self, _action: Action) { /* No-op for simple component */ }
+    fn send_action(&self, _action: weavetui_core::event::Action) { /* No-op for simple component */ }
     fn as_active(self) -> Self { self }
-    fn get_children(&mut self) -> &mut std::collections::BTreeMap<String, Box<dyn Component>> {
-        // For a unit struct without explicit children, return a reference to a static empty map.
-        // In a real application, components with children would manage their own BTreeMap.
-        static mut EMPTY_CHILDREN: std::collections::BTreeMap<String, Box<dyn Component>> = std::collections::BTreeMap::new();
+    fn get_children(&mut self) -> &mut BTreeMap<String, Box<dyn Component>> {
+        // For a unit struct without explicit children, return a mutable reference to a static empty map.
+        static mut EMPTY_CHILDREN: BTreeMap<String, Box<dyn Component>> = BTreeMap::new();
         unsafe { &mut EMPTY_CHILDREN }
     }
 }
@@ -63,10 +63,6 @@ impl Component for MyCustomComponent {
             .borders(Borders::ALL)
             .title("My Component");
         f.render_widget(Paragraph::new("Hello from Core!").block(block), area);
-    }
-
-    fn handle_key_events(&mut self, _key: crossterm::event::KeyEvent) -> Option<Action> {
-        None
     }
 }
 ```
