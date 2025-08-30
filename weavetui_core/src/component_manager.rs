@@ -1,4 +1,4 @@
-use ratatui::{Frame, layout::{Rect, Size}};
+use ratatui::{layout::Rect, Frame};
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
@@ -7,12 +7,17 @@ use crate::{
 };
 
 /// Handle a message for a specific component and its children, recursively.
-pub fn handle_draw<T: Component + ?Sized>(c: &mut T, f: &mut Frame<'_>, area: Rect) {
-    if c.is_active() {
-        c.draw(f, area);
+pub fn handle_draw<T: Component + ?Sized>(c: &mut T, f: &mut Frame<'_>) {
+    if let Some(area) = c.area() {
+        if c.is_active() {
+            c.draw(f, area);
 
-        for child in c.get_children().values_mut() {
-            handle_draw(child.as_mut(), f, area);
+            for child in c.get_children().values_mut() {
+                if child.area().is_none() {
+                    child.set_area(area);
+                }
+                handle_draw(child.as_mut(), f);
+            }
         }
     }
 }
@@ -40,7 +45,7 @@ pub fn handle_message<T: Component + ?Sized>(c: &mut T, message: &str) {
 }
 
 /// Initialize a component and its children recursively.
-pub fn init<T: Component + ?Sized>(c: &mut T, area: Size) {
+pub fn init<T: Component + ?Sized>(c: &mut T, area: Rect) {
     c.init(area);
 
     for child in c.get_children().values_mut() {

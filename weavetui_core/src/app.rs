@@ -220,14 +220,11 @@ impl App {
             handler.receive_action_handler(self.action_tx.clone());
         }
 
-        for handler in self.component_handlers.iter_mut() {
-            handler.handle_init(tui.size()?);
-        }
-
+        let mut initialize = false;
         loop {
             if let Some(e) = tui.next().await {
                 match e {
-                    // Event::Resize(x, y) => self.send(Action::Resize(x, y))?,
+                    Event::Resize(x, y) => self.send(Action::Resize(x, y))?,
                     Event::Render => self.send(Action::Render)?,
                     Event::Tick => self.send(Action::Tick)?,
                     Event::Quit => self.send(Action::Quit)?,
@@ -273,7 +270,13 @@ impl App {
                     Action::Render => {
                         tui.draw(|f| {
                             for handler in self.component_handlers.iter_mut() {
-                                handler.handle_draw(f, f.area());
+                                let area = f.area();
+                                if !initialize {
+                                    handler.handle_init(area);
+                                    initialize = true;
+                                }
+                                handler.c.set_area(area);
+                                handler.handle_draw(f);
                             }
                         })?;
                     }
@@ -283,7 +286,9 @@ impl App {
 
                     Action::AppAction(ref m) => {
                         for handler in self.component_handlers.iter_mut() {
-                            handler.handle_message(m.as_str());
+                            if handler.c.is_active() {
+                                handler.handle_message(m.as_str());
+                            }
                         }
                     }
 

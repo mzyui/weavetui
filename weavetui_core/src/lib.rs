@@ -1,10 +1,10 @@
 //! Core library for the `weavetui` TUI framework.
-//! 
+//!
 //! This crate defines the fundamental traits and types for building interactive
 //! Text User Interface (TUI) components, including `Component` for rendering
 //! and event handling, and `ComponentAccessor` for managing component properties
 //! and children.
-//! 
+//!
 //! It provides the building blocks for the `weavetui` ecosystem, designed to be
 //! used in conjunction with the `weavetui_derive` crate for declarative component
 //! creation.
@@ -21,10 +21,7 @@ pub mod macros;
 pub mod tui;
 
 use crossterm::event::{KeyEvent, MouseEvent};
-use ratatui::{
-    layout::{Rect, Size},
-    Frame,
-};
+use ratatui::{layout::Rect, Frame};
 use tokio::sync::mpsc::UnboundedSender;
 
 use event::Action;
@@ -39,7 +36,7 @@ use crate::event::Event;
 pub type Children = BTreeMap<String, Box<dyn Component>>;
 
 #[derive(Debug)]
-pub(crate) struct ComponentHandler {
+pub struct ComponentHandler {
     c: Box<dyn Component>,
 }
 
@@ -48,7 +45,7 @@ impl ComponentHandler {
         Self { c: component }
     }
 
-    pub(crate) fn handle_init(&mut self, area: Size) {
+    pub(crate) fn handle_init(&mut self, area: Rect) {
         component_manager::init(self.c.as_mut(), area);
     }
 
@@ -68,14 +65,18 @@ impl ComponentHandler {
         component_manager::handle_message(self.c.as_mut(), message);
     }
 
-    pub(crate) fn handle_draw(&mut self, f: &mut Frame<'_>, area: Rect) {
-        component_manager::handle_draw(self.c.as_mut(), f, area);
+    pub(crate) fn handle_draw(&mut self, f: &mut Frame<'_>) {
+        component_manager::handle_draw(self.c.as_mut(), f);
     }
 }
 
 pub trait ComponentAccessor: Debug {
     /// returns the name of the component
     fn name(&self) -> String;
+
+    fn area(&self) -> Option<Rect>;
+
+    fn set_area(&mut self, area: Rect);
 
     /// returns the active state of the component
     fn is_active(&self) -> bool;
@@ -112,7 +113,7 @@ pub trait Component: ComponentAccessor + Downcast {
     ///
     /// * `area` - Rectangular area where the component will be rendered the first time.
     #[allow(unused)]
-    fn init(&mut self, area: Size) {}
+    fn init(&mut self, area: Rect) {}
 
     /// Handle key events and produce actions if necessary.
     ///
