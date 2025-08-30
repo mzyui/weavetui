@@ -56,7 +56,7 @@ mod args;
 /// pub struct ChildB;
 ///
 /// // The macro will generate implementations for Component and ComponentAccessor,
-/// // and inject `children`, `_active`, `_action_tx` fields.
+/// // and inject `children`, `_area`, `_active`, `_action_tx` fields.
 /// // If `default` is used, a basic `draw` method is also generated.
 /// ```
 #[proc_macro_attribute]
@@ -107,18 +107,12 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             },
             input_tokens,
         )
-        .expect(
-            "Failed to parse attribute: expected `children(\"key\" => Type, ...)` or `default`",
-        );
+        .expect("Failed to parse attribute: expected `children(...)` or `default`");
     }
 
-    // Determine the type of the children field - ALWAYS Vec<Box<dyn Component>>
     let actual_children_type =
         quote! { std::collections::BTreeMap<String, Box<dyn weavetui_core::Component>> };
 
-    // Inject `children`, `_active`, and `_action_tx` fields into the struct.
-    // These fields are essential for the `Component` and `ComponentAccessor` traits.
-    // If the struct is a unit struct, it is transformed into a named-field struct.
     let children_field_name = Ident::new("children", name.span());
     let mut found_children_field = false;
     if let Fields::Named(FieldsNamed { named, .. }) = &mut ast.fields {
@@ -137,12 +131,21 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                 parse_quote! { pub #children_field_name: #actual_children_type };
             named.push(new_children_field);
         }
+
+        // Add _area field if not present
+        if !named
+            .iter()
+            .any(|f| f.ident.as_ref().is_some_and(|i| i == "_area"))
+        {
+            named.push(parse_quote! { _area: Option<ratatui::layout::Rect> });
+        }
+
         // Add _active field if not present
         if !named
             .iter()
             .any(|f| f.ident.as_ref().is_some_and(|i| i == "_active"))
         {
-            named.push(parse_quote! { pub _active: bool });
+            named.push(parse_quote! { _active: bool });
         }
         // Add _action_tx field if not present
         if !named
@@ -150,7 +153,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             .any(|f| f.ident.as_ref().is_some_and(|i| i == "_action_tx"))
         {
             named.push(
-                parse_quote! { pub _action_tx: Option<tokio::sync::mpsc::UnboundedSender<Action>> },
+                parse_quote! { _action_tx: Option<tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>> },
             );
         }
     } else if let Fields::Unnamed(FieldsUnnamed {
@@ -165,9 +168,10 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         let new_children_field: syn::Field = parse_quote! { pub children: #actual_children_type };
         let mut named_fields = syn::punctuated::Punctuated::new();
         named_fields.push(new_children_field);
-        named_fields.push(parse_quote! { pub _active: bool });
+        named_fields.push(parse_quote! { _area: Option<ratatui::layout::Rect> });
+        named_fields.push(parse_quote! { _active: bool });
         named_fields.push(
-            parse_quote! { pub _action_tx: Option<tokio::sync::mpsc::UnboundedSender<Action>> },
+            parse_quote! { _action_tx: Option<tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>> },
         );
         ast.fields = Fields::Named(FieldsNamed {
             brace_token: syn::token::Brace::default(),
@@ -245,6 +249,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             // If it is, it means the original struct was a unit struct and we added fields.
             // In that case, we need to initialize the added fields.
             field_initializers.push(quote! { children: children_map });
+            field_initializers.push(quote! { _area: Default::default() });
             field_initializers.push(quote! { _active: Default::default() });
             field_initializers.push(quote! { _action_tx: Default::default() });
         }
@@ -277,6 +282,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         } else {
             field_initializers.push(quote! { children: std::collections::BTreeMap::new() });
+            field_initializers.push(quote! { _area: Default::default() });
             field_initializers.push(quote! { _active: Default::default() });
             field_initializers.push(quote! { _action_tx: Default::default() });
         }
@@ -299,12 +305,14 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! {
             impl weavetui_core::Component for #name {
                 fn draw(&mut self, f: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect) {
-                    f.render_widget(
-                        ratatui::widgets::Block::bordered()
-                            .title_top(ratatui::text::Line::from(format!(" {}: {} x {} ", self.name(), area.height, area.width)))
-                            .title_alignment(ratatui::layout::Alignment::Center),
-                        area
-                    );
+                    if let Some(area) = self.area() {
+                        f.render_widget(
+                            ratatui::widgets::Block::bordered()
+                                .title_top(ratatui::text::Line::from(format!(" {}: {} x {} ", weavetui_core::ComponentAccessor::name(self), area.height, area.width)))
+                                .title_alignment(ratatui::layout::Alignment::Center),
+                            area
+                        );
+                    }
 
                 }
             }
@@ -326,6 +334,14 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                 stringify!(#name).to_string()
             }
 
+            fn area(&self) -> Option<ratatui::layout::Rect> {
+                self._area
+            }
+
+            fn set_area(&mut self, area: ratatui::layout::Rect) {
+                self._area = Some(area);
+            }
+
             fn is_active(&self) -> bool {
                 self._active
             }
@@ -339,7 +355,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
 
-            fn register_action_handler(&mut self, tx: tokio::sync::mpsc::UnboundedSender<Action>) {
+            fn register_action_handler(&mut self, tx: tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>) {
                 self._action_tx = Some(tx);
             }
 
