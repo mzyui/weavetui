@@ -1,8 +1,10 @@
 use ratatui::{
-    layout::Alignment,
+    Frame,
+    layout::{Alignment, Rect},
     style::{Color, Stylize},
     widgets::{Block, BorderType, Paragraph},
 };
+use weavetui::Component;
 use weavetui_core::{ComponentAccessor, app::App, components, event::Action, kb};
 use weavetui_derive::component;
 
@@ -21,8 +23,8 @@ impl Counter {
     }
 }
 
-impl weavetui_core::Component for Counter {
-    fn draw(&mut self, f: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect) {
+impl Component for Counter {
+    fn draw(&mut self, f: &mut Frame<'_>, area: Rect) {
         let block = Block::bordered()
             .title(" WeaveTUI ")
             .title_alignment(Alignment::Center)

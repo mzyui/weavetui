@@ -25,7 +25,6 @@ pub type IO = std::io::Stdout;
 fn io() -> IO {
     std::io::stdout()
 }
-pub type Frame<'a> = ratatui::Frame<'a>;
 
 /// The Tui struct represents a terminal user interface.
 ///
@@ -231,11 +230,11 @@ impl Tui {
     }
 
     pub fn suspend(&mut self) -> anyhow::Result<()> {
-        self.exit().map_err(anyhow::Error::from)
+        self.exit()
     }
 
     pub fn resume(&mut self) -> anyhow::Result<()> {
-        self.enter().map_err(anyhow::Error::from)
+        self.enter()
     }
 
     /// Returns the next event from the event channel.
