@@ -8,7 +8,7 @@ license = "MIT"
 repository = "https://github.com/mzyui/weavetui"
 homepage = "https://github.com/mzyui/weavetui"
 documentation = "https://docs.rs/weavetui_derive"
-keywords = ["tui", "component", "ui", "weavetui", "macro", "derive"]
+keywords = ["tui", "component", "ui", "weavetui", "macro"]
 categories = ["development-tools::procedural-macro"]
 
 [lib]
