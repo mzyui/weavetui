@@ -7,24 +7,22 @@
 /// 1. `<key> => <action>` syntax:
 ///
 /// ```rust
-/// # use matetui::{kb, Action};
+/// # use weavetui::{kb, event::Action};
 /// let keybindings = kb![
 ///     "<q>" => Action::Quit,
-///     "<d>" => "app:drink-mate"
+///     "d" => "app:drink-mate"
 /// ];
 /// ```
 ///
 /// 2. `(<key>, <action>)` syntax:
 ///
 /// ```rust
-/// # use matetui::{kb, Action};
+/// # use weavetui::{kb, event::Action};
 /// let keybindings = kb![
 ///     ("<q>", Action::Quit),
-///     ("<d>", "app:drink-mate")
+///     ("d", "app:drink-mate")
 /// ];
 /// ```
-///
-/// Each action will be converted into an `ActionKind`.
 #[macro_export]
 macro_rules! kb {
     // Accepts "<key>" => <action> syntax
@@ -42,9 +40,28 @@ macro_rules! kb {
     };
 }
 
-/// Creates a vector of components.
+/// Creates a vector of components from a list of component instances.
 ///
-/// Each component will be converted into a `Box<dyn Component>`.
+/// Each component will be boxed as a `Box<dyn Component>`.
+///
+/// ## Usage
+///
+/// ```rust,ignore
+/// use weavetui::{components, Component};
+///
+/// #[derive(Default)]
+/// struct MyComponent1;
+/// #[derive(Default)]
+/// struct MyComponent2;
+///
+/// // impl Component for MyComponent1 ...
+/// // impl Component for MyComponent2 ...
+///
+/// let my_components: Vec<Box<dyn Component>> = components![
+///     MyComponent1::default(),
+///     MyComponent2::default()
+/// ];
+/// ```
 #[macro_export]
 macro_rules! components {
     ( $( $x:expr $( => $t:ty )* ),* ) => {
