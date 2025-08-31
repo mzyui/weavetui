@@ -26,23 +26,29 @@ fn io() -> IO {
     std::io::stdout()
 }
 
-/// The Tui struct represents a terminal user interface.
+/// Represents the terminal user interface.
 ///
-/// It encapsulates [ratatui::Terminal] adding extra functionality:
-/// - [Tui::start] and [Tui::stop] to start and stop the event loop
-/// - [Tui::enter] and [Tui::exit] to enter and exit the crossterm terminal
-///   [raw mode](https://docs.rs/crossterm/0.28.1/crossterm/terminal/index.html#raw-mode)
-/// - Mapping of crossterm events to [Event]s
-/// - Emits [Event::Tick] and [Event::Render] events at a specified rate
+/// This struct encapsulates a `ratatui::Terminal` and handles the event loop,
+/// mapping crossterm events to `weavetui`'s own `Event` enum. It also emits
+/// `Tick` and `Render` events at a configurable rate.
 pub struct Tui {
+    /// The `ratatui` terminal instance.
     pub terminal: ratatui::Terminal<Backend<IO>>,
+    /// The handle to the Tokio task that runs the event loop.
     pub task: JoinHandle<()>,
+    /// The cancellation token for the event loop task.
     pub cancellation_token: CancellationToken,
+    /// The receiver for events.
     pub event_rx: UnboundedReceiver<Event>,
+    /// The sender for events.
     pub event_tx: UnboundedSender<Event>,
+    /// The frame rate for rendering.
     pub frame_rate: f64,
+    /// The tick rate for application updates.
     pub tick_rate: f64,
+    /// Flag to enable/disable mouse capture.
     pub mouse: bool,
+    /// Flag to enable/disable bracketed paste.
     pub paste: bool,
 }
 
@@ -225,14 +231,20 @@ impl Tui {
         Ok(())
     }
 
+    /// Cancels the event loop task.
     pub fn cancel(&self) {
         self.cancellation_token.cancel();
     }
 
+    /// Suspends the TUI by exiting the alternate screen and disabling raw mode.
+    /// This is useful for temporarily leaving the application to perform other
+    /// actions in the terminal.
     pub fn suspend(&mut self) -> anyhow::Result<()> {
         self.exit()
     }
 
+    /// Resumes the TUI by re-entering the alternate screen and enabling raw mode.
+    /// This should be called after `suspend`.
     pub fn resume(&mut self) -> anyhow::Result<()> {
         self.enter()
     }
@@ -246,22 +258,22 @@ impl Tui {
 impl Deref for Tui {
     type Target = ratatui::Terminal<Backend<IO>>;
 
+    /// Dereferences to the underlying `ratatui::Terminal`.
     fn deref(&self) -> &Self::Target {
-        // deref Tui as Terminal
         &self.terminal
     }
 }
 
 impl DerefMut for Tui {
+    /// Mutably dereferences to the underlying `ratatui::Terminal`.
     fn deref_mut(&mut self) -> &mut Self::Target {
-        // deref Tui as Terminal mutably
         &mut self.terminal
     }
 }
 
 impl Drop for Tui {
+    /// Ensures that the terminal is cleaned up when the `Tui` is dropped.
     fn drop(&mut self) {
-        // Ensure that the terminal is cleaned up when the Tui is dropped
         self.exit().expect("Failed to exit Tui cleanly during drop");
     }
 }
