@@ -87,7 +87,7 @@ graph TD
     subgraph " Phase 1: Compile Time"
         A[Developer writes Component Struct & adds &#91;component&#93;] --> B{Rust Compiler};
         B --> C[`weavetui_derive` Crate];
-        C --"Macro `#[component]` active"--> D[Implementation of `Component` & `ComponentAccessor` traits is automatically generated];
+        C --"Macro &#91;component&#93; active"--> D[Implementation of `Component` & `ComponentAccessor` traits is automatically generated];
         D --> E[Complete Component Code];
     end
 
@@ -96,7 +96,7 @@ graph TD
         G --> H{Main Event Loop};
 
         subgraph "Event & Render Cycle"
-            H --"Waiting for input..."--> I[User provides input (Keyboard/Mouse)];
+            H --"Waiting for input..."--> I[User provides input &#40;Keyboard/Mouse&#41;];
             I --> J[`EventHandler` from `weavetui_core`];
             J --"Event distributed"--> K[`ComponentManager`];
             K --"Finds active component & calls `handle_key_events`"--> L[Active Component];
