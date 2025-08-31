@@ -4,8 +4,7 @@ use ratatui::{
     style::{Color, Stylize},
     widgets::{Block, BorderType, Paragraph},
 };
-use weavetui::Component;
-use weavetui_core::{ComponentAccessor, app::App, components, event::Action, kb};
+use weavetui_core::{Component, ComponentAccessor, app::App, components, event::Action, kb};
 use weavetui_derive::component;
 
 #[component]
