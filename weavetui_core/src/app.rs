@@ -23,7 +23,6 @@ pub struct App {
     tick_rate: f64,
     frame_rate: f64,
     should_quit: bool,
-    // pub should_suspend: bool,
     keybindings: KeyBindings,
     last_tick_key_events: Vec<KeyEvent>,
     mouse: bool,
@@ -43,7 +42,6 @@ impl Default for App {
             frame_rate: 24.into(),
             tick_rate: 1.into(),
             should_quit: false,
-            // should_suspend: false,
             mouse: false,
             paste: false,
             action_tx,
@@ -180,12 +178,6 @@ impl App {
     /// A `Result` indicating success or failure.
     fn send(&self, action: Action) -> Result<()> {
         self.action_tx.send(action)?;
-
-        // match action {
-        //     Action::AppAction(cmd) => self.action_tx.send(cmd)?,
-        //     Action::Key(key) => self.action_tx.send(key)?,
-        //     action => self.action_tx.send(action.to_string())?,
-        // };
         Ok(())
     }
 
@@ -218,6 +210,17 @@ impl App {
 
         for handler in self.component_handlers.iter_mut() {
             handler.receive_action_handler(self.action_tx.clone());
+            handler.handle_custom_keybindings(&mut self.keybindings);
+        }
+
+        // Check for Action::Quit
+        if !self
+            .keybindings
+            .0
+            .iter()
+            .any(|(_, action)| *action == Action::Quit)
+        {
+            anyhow::bail!("Action::Quit is not bound to any key. Consider binding it for graceful exit (e.g., <ctrl-c>).");
         }
 
         let mut initialize = false;
