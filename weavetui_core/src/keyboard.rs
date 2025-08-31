@@ -5,19 +5,27 @@ use {
     std::{collections::HashMap, str::FromStr},
 };
 
-#[derive(Clone, Debug)]
-/// A struct that holds key bindings
+/// A struct that holds key bindings.
 ///
-/// The key bindings are stored in a hashmap where the key is a vector of
-/// [`crossterm::event::KeyEvent`] and the value is a
-/// [`Action`](crate::tui::Action). This is constructed automatically by [`Kb`](crate::tui::Kb)
-/// using a [`str`] to [`Action`](crate::tui::Action) mapping, using special syntax to represent
-/// keys and key sequences (see
-/// [`parse_key_sequence`](crate::tui::utils::keyboard::parse_key_sequence) and
-/// [`Kb`](crate::tui::Kb) for more information).
+/// The key bindings are stored in a `HashMap` where the key is a vector of
+/// [`crossterm::event::KeyEvent`] and the value is an [`Action`].
+///
+/// This is typically constructed automatically by the `kb!` macro.
+/// Key sequences are parsed from strings with a special syntax.
+/// See [`parse_key_sequence`] for more information on the syntax.
+#[derive(Clone, Debug)]
 pub struct KeyBindings(pub HashMap<Vec<KeyEvent>, Action>);
 
 impl KeyBindings {
+    /// Creates a new `KeyBindings` instance from a raw array of key strings and actions.
+    ///
+    /// This method parses the key strings into `KeyEvent` sequences and maps them to the
+    /// provided actions. It also ensures that a `Quit` action is bound to some key
+    /// combination to prevent the application from being un-closeable.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `Action::Quit` is not bound to any key.
     pub fn new<const N: usize>(raw: [(&str, impl Into<ActionKind>); N]) -> Self {
         let mut keybindings = HashMap::new();
         for (key_str, cmd) in raw.into_iter() {
@@ -41,19 +49,32 @@ impl KeyBindings {
             }
         }
 
-        // Check for Action::Quit
-        if !keybindings
-            .iter()
-            .any(|(_, action)| *action == Action::Quit)
-        {
-            panic!("Action::Quit is not bound to any key. Consider binding it for graceful exit (e.g., <ctrl-c>).\n");
-        }
-
         KeyBindings(keybindings)
     }
 
+    /// Retrieves the action associated with a given sequence of key events.
+    ///
+    /// # Arguments
+    ///
+    /// * `key_events` - A slice of `KeyEvent`s to look up.
+    ///
+    /// # Returns
+    ///
+    /// An `Option<&Action>` which is `Some` if a binding is found, and `None` otherwise.
     pub fn get(&self, key_events: &[KeyEvent]) -> Option<&Action> {
         self.0.get(key_events)
+    }
+
+    /// Extends the current key bindings with another set of key bindings.
+    ///
+    /// If a key sequence already exists in the current bindings, it will be overwritten
+    /// by the new binding.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The `KeyBindings` to extend with.
+    pub fn extend(&mut self, other: KeyBindings) {
+        self.0.extend(other.0);
     }
 }
 
@@ -65,18 +86,14 @@ impl Default for KeyBindings {
     }
 }
 
-/// `@internal`
-///
-/// Parses a string into a [`KeyEvent`]
+/// For internal use. Parses a string into a [`KeyEvent`].
 fn parse_key_event(raw: &str) -> Result<KeyEvent, std::io::Error> {
     let raw_lower = raw.to_ascii_lowercase();
     let (remaining, modifiers) = extract_modifiers(&raw_lower);
     parse_key_code_with_modifiers(remaining, modifiers)
 }
 
-/// `@internal`
-///
-/// Extracts the modifiers from a string formatted as `modifier-key`
+/// For internal use. Extracts the modifiers from a string formatted as `modifier-key`.
 fn extract_modifiers(raw: &str) -> (&str, KeyModifiers) {
     let mut modifiers = KeyModifiers::empty();
     let mut current = raw;
@@ -102,9 +119,7 @@ fn extract_modifiers(raw: &str) -> (&str, KeyModifiers) {
     (current, modifiers)
 }
 
-/// `@internal`
-///
-/// Parses a string into a [`KeyEvent`] with modifiers
+/// For internal use. Parses a string into a [`KeyEvent`] with modifiers.
 fn parse_key_code_with_modifiers(
     raw: &str,
     mut modifiers: KeyModifiers,
@@ -160,7 +175,10 @@ fn parse_key_code_with_modifiers(
     Ok(KeyEvent::new(c, modifiers))
 }
 
-/// Converts a [`KeyEvent`] to a string representation
+/// Converts a `KeyEvent` to its string representation.
+///
+/// The string representation is compatible with the format used by [`parse_key_sequence`].
+/// For example, a `Ctrl-C` key event would be converted to the string `"<ctrl-c>"`.
 pub fn key_event_to_string(key_event: &KeyEvent) -> String {
     let char;
     let key_code = match key_event.code {
@@ -234,7 +252,21 @@ pub fn key_event_to_string(key_event: &KeyEvent) -> String {
     key
 }
 
-/// Parses a string into a vector of [`KeyEvent`]
+/// Parses a string representation of a key sequence into a vector of `KeyEvent`s.
+///
+/// The key sequence string can represent single keys or multi-key combinations.
+///
+/// ## Syntax
+///
+/// -   **Modifiers:** `ctrl-`, `alt-`, `shift-`
+/// -   **Keys:** Standard alphanumeric characters, or special keys like `esc`, `enter`, `left`, `f1`, etc.
+/// -   **Sequences:** Multiple keys can be chained together with `><`.
+///
+/// ## Examples
+///
+/// -   `"<ctrl-c>"`
+/// -   `"<alt-x><alt-y>"`
+/// -   `"a"`
 pub fn parse_key_sequence(raw: &str) -> Result<Vec<KeyEvent>, std::io::Error> {
     if raw.chars().filter(|c| *c == '>').count() != raw.chars().filter(|c| *c == '<').count() {
         return Err(std::io::Error::new(
