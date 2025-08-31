@@ -61,6 +61,7 @@ impl ComponentHandler {
     }
 
     /// Handles input events and returns a list of resulting actions.
+    /// Handles input events and returns a list of resulting actions.
     pub(crate) fn handle_events(&mut self, event: &Option<Event>) -> Vec<Action> {
         component_manager::handle_event_for(self.c.as_mut(), event)
     }
