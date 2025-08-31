@@ -78,6 +78,73 @@ This repository is organized as a Rust workspace, containing the following crate
 *   `weavetui_core/`: A foundational library defining core TUI traits (`Component`, `ComponentAccessor`), event handling mechanisms, and utility functions.
 *   `weavetui_derive/`: A procedural macro crate providing the `#[component]` attribute for automatic trait implementation, simplifying component creation.
 
+## ⚙️ How `weavetui` Works
+
+`weavetui` is designed to simplify the development of complex Text User Interface (TUI) applications in Rust. Its essence lies in its component-based architecture and the use of procedural macros to reduce boilerplate. Here's a detailed overview of how it works:
+
+```mermaid
+graph TD
+    subgraph " Phase 1: Compile Time"
+        A[Developer writes Component Struct & adds `#[component]`] --> B{Rust Compiler};
+        B --> C[`weavetui_derive` Crate];
+        C --"Macro `#[component]` active"--> D[Implementation of `Component` & `ComponentAccessor` traits is automatically generated];
+        D --> E[Complete Component Code];
+    end
+
+    subgraph "Phase 2: Runtime"
+        F[`weavetui` Application starts] --> G[Terminal Initialization & `ComponentManager`];
+        G --> H{Main Event Loop};
+
+        subgraph "Event & Render Cycle"
+            H --"Waiting for input..."--> I[User provides input (Keyboard/Mouse)];
+            I --> J[`EventHandler` from `weavetui_core`];
+            J --"Event distributed"--> K[`ComponentManager`];
+            K --"Finds active component & calls `handle_key_events`"--> L[Active Component];
+            L --"1. Internal state is modified"--> L;
+            L --"2. Returns 'Action' (optional)"--> M{Action Handling};
+            M --"Action processed (e.g., 'quit', 'submit')"--> H;
+            K --"Triggers render process after event"--> N[Render Engine];
+            N --"Calls `draw()` on each visible component"--> O[Each Component];
+            O --"Renders view to buffer"--> P[Terminal Buffer];
+            P --> Q[Terminal Display updated];
+            Q --> H;
+        end
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style C fill:#f9f,stroke:#333,stroke-width:2px
+    style F fill:#ccf,stroke:#333,stroke-width:2px
+    style I fill:#ccf,stroke:#333,stroke-width:2px
+```
+
+### Detailed Explanation
+
+1.  **Developer Writes Component**: You define your UI as a `struct` in Rust and add the `#[component]` attribute above it. This attribute is the main key to simplifying the process.
+
+2.  **Compile Time (Macro Magic)**:
+    *   When you compile your project (`cargo build`), `weavetui_derive` (a *procedural macro*) becomes active.
+    *   This macro automatically writes boilerplate code for you. It implements two important traits from `weavetui_core`:
+        *   `Component`: Handles core logic such as `handle_key_events`, `handle_mouse_events`, and `draw`.
+        *   `ComponentAccessor`: Provides methods to access common properties like component name and active status.
+
+3.  **Runtime (Application Running)**:
+    *   **Initialization**: Your main application starts, setting up the terminal for TUI rendering and creating a `ComponentManager`. This `ComponentManager` is responsible for managing the entire state and lifecycle of all components.
+    *   **Event Loop**: The application enters an infinite loop that continuously waits for three things: user input, internal events, and signals to re-render the UI.
+
+4.  **Event Cycle**:
+    *   **User Input**: When you press a key (e.g., `j` for down), the `EventHandler` captures it.
+    *   **Event Distribution**: This event is passed to the `ComponentManager`.
+    *   **Event Handling**: The `ComponentManager` determines which component is currently active, then calls the `handle_key_events` method on that component. This is where your logic (within `impl Component`) is executed. The component can modify its internal state (e.g., change the selected item in a list).
+    *   **Actions**: After handling an event, a component can return an `Action` (e.g., as a `String` like `"quit"` or `"save"`). This `Action` is how components communicate back to the `ComponentManager` or other components to trigger larger changes.
+
+5.  **Render Cycle**:
+    *   After an event is handled, the `ComponentManager` will trigger the render process to update the display.
+    *   The render engine will traverse your component tree and call the `draw()` method on each visible component.
+    *   Each component then "draws" itself to a buffer in memory.
+    *   Once all components have been drawn to the buffer, the buffer is displayed to the terminal, and you will see the changes on the screen.
+
+6.  **Back to Loop**: The process returns to the beginning, waiting for the next user input. This cycle repeats rapidly, giving the illusion of an interactive and responsive application.
+
 ## 🧪 Running Tests
 
 To ensure the stability and correctness of the framework and application, you can run the test suite:
