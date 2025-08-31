@@ -1,6 +1,6 @@
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&duration=1500&pause=1000&center=true&vCenter=true&width=460&lines=weavetui;A+Modern+TUI+Framework+and+Application)](https://git.io/typing-svg)
 
-[![Build Status](https://github.com/weavetui/weavetui/actions/workflows/rust.yml/badge.svg)](https://github.com/weavetui/weavetui/actions/workflows/rust.yml)
+
 [![crates.io](https://img.shields.io/crates/v/weavetui_core.svg)](https://crates.io/crates/weavetui_core)
 [![crates.io](https://img.shields.io/crates/v/weavetui_derive.svg)](https://crates.io/crates/weavetui_derive)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
