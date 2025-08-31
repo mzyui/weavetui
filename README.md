@@ -1,9 +1,24 @@
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&duration=1500&pause=1000&center=true&vCenter=true&width=460&lines=weavetui;A+Modern+TUI+Framework+and+Application)](https://git.io/typing-svg)
+<div align="center">
+  <a href="https://git.io/typing-svg">
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&duration=2000&pause=1000&color=36BCF7&center=true&vCenter=true&width=500&lines=weavetui;A+Modern%2C+Robust%2C+and+Modular+TUI+Framework" alt="Typing SVG" />
+  </a>
+</div>
 
+<div align="center">
 
-[![crates.io](https://img.shields.io/crates/v/weavetui_core.svg)](https://crates.io/crates/weavetui_core)
-[![crates.io](https://img.shields.io/crates/v/weavetui_derive.svg)](https://crates.io/crates/weavetui_derive)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+| **Crate**           | **Version**                                                                                             | **Docs**                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `weavetui`          | [![crates.io](https://img.shields.io/crates/v/weavetui.svg)](https://crates.io/crates/weavetui)             | [![docs.rs](https://img.shields.io/docsrs/weavetui)](https://docs.rs/weavetui)                         |
+| `weavetui_core`     | [![crates.io](https://img.shields.io/crates/v/weavetui_core.svg)](https://crates.io/crates/weavetui_core) | [![docs.rs](https://img.shields.io/docsrs/weavetui_core)](https://docs.rs/weavetui_core)             |
+| `weavetui_derive`   | [![crates.io](https://img.shields.io/crates/v/weavetui_derive.svg)](https://crates.io/crates/weavetui_derive) | [![docs.rs](https://img.shields.io/docsrs/weavetui_derive)](https://docs.rs/weavetui_derive)         |
+
+<br>
+
+[![Build Status](https://github.com/mzyui/weavetui/actions/workflows/rust.yml/badge.svg)](https://github.com/mzyui/weavetui/actions/workflows/rust.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+</div>
 
 ---
 
