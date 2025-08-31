@@ -85,7 +85,7 @@ This repository is organized as a Rust workspace, containing the following crate
 ```mermaid
 graph TD
     subgraph " Phase 1: Compile Time"
-        A[Developer writes Component Struct & adds `#[component]`] --> B{Rust Compiler};
+        A[Developer writes Component Struct & adds &#91;component&#93;] --> B{Rust Compiler};
         B --> C[`weavetui_derive` Crate];
         C --"Macro `#[component]` active"--> D[Implementation of `Component` & `ComponentAccessor` traits is automatically generated];
         D --> E[Complete Component Code];
