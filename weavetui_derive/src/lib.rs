@@ -8,56 +8,66 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    Fields, FieldsNamed, FieldsUnnamed, Ident, ItemStruct, parse::ParseStream, parse_macro_input,
-    parse_quote, punctuated::Punctuated,
+    parse::ParseStream, parse_macro_input, parse_quote, punctuated::Punctuated, Fields, FieldsNamed,
+    FieldsUnnamed, Ident, ItemStruct,
 };
 mod args;
 
 /// Implements the `weavetui_core::Component` and `weavetui_core::ComponentAccessor` traits
-/// for a given struct, enabling it to function as a UI component within the `weavetui` framework.
+/// for a struct, turning it into a `weavetui` component.
 ///
-/// This macro automatically injects necessary fields (`children`, `_active`, `_action_tx`)
-/// and provides default implementations for the component traits.
+/// This macro simplifies component creation by:
+/// - Automatically injecting necessary fields: `children`, `_area`, `_active`, and `_action_tx`.
+/// - Generating a `Default` implementation that initializes children.
+/// - Providing default implementations for the `ComponentAccessor` trait.
 ///
-/// # Attributes:
+/// # Attributes
 ///
-/// - `#[component(children("key" => Type, ...))]`: Specifies child components for the struct.
-///   Each child is defined by a key (string literal) and its type. The macro will automatically
-///   initialize these children in the generated `Default` implementation.
-///   Example: `#[component(children("home" => HomeComponent, "button" => ButtonComponent))]`
+/// - `#[component(children = [child_name => ChildType, ...])]`: Defines child components.
+///   The macro will add a `children` field of type `BTreeMap<String, Box<dyn Component>>`
+///   and initialize it with the specified children in the `Default` implementation.
 ///
-/// - `#[component(default)]`: Generates a basic `draw` implementation for the `Component` trait
-///   that renders a bordered block with the component's name and dimensions.
+///   - `child_name`: A string literal representing the key for the child.
+///   - `ChildType`: The type of the child component, which must implement `Default`.
 ///
-/// # Example:
+/// - `#[component(default)]`: Generates a default `draw` method implementation for the
+///   `Component` trait. This is useful for placeholder components or for quickly
+///   visualizing the component's area. The default `draw` method renders a bordered
+///   block with the component's name and dimensions.
 ///
-/// ```rust
-/// use weavetui_derive::component;
-/// use weavetui_core::Component;
-/// use ratatui::Frame;
-/// use ratatui::layout::Rect;
+/// # Injected Fields
 ///
-/// #[component(children("child_a" => ChildA, "child_b" => ChildB), default)]
+/// - `pub children: BTreeMap<String, Box<dyn Component>>`: A map to hold child components.
+/// - `_area: Option<ratatui::layout::Rect>`: The area assigned to the component for rendering.
+/// - `_active: bool`: The active state of the component.
+/// - `_action_tx: Option<UnboundedSender<Action>>`: A sender for dispatching actions.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use weavetui::prelude::*; // Includes necessary traits and macros
+/// use ratatui::prelude::*;
+///
+/// #[component(default)]
+/// pub struct Child;
+///
+/// #[component(children = [ "child" => Child ])]
+/// #[derive(Default)]
 /// pub struct MyComponent {
-///     // Your component-specific fields
-///     pub counter: u32,
+///     pub counter: i32,
 /// }
 ///
-/// impl MyComponent {
-///     pub fn new() -> Self {
-///         Self { counter: 0, ..Default::default() }
+/// impl Component for MyComponent {
+///     fn draw(&mut self, f: &mut Frame, area: Rect) {
+///         // Custom draw logic here
 ///     }
 /// }
 ///
-/// #[component]
-/// pub struct ChildA;
-///
-/// #[component]
-/// pub struct ChildB;
-///
-/// // The macro will generate implementations for Component and ComponentAccessor,
-/// // and inject `children`, `_area`, `_active`, `_action_tx` fields.
-/// // If `default` is used, a basic `draw` method is also generated.
+/// fn main() {
+///     let my_component = MyComponent::default();
+///     assert_eq!(my_component.children.len(), 1);
+///     assert!(my_component.children.contains_key("child"));
+/// }
 /// ```
 #[proc_macro_attribute]
 pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -68,10 +78,8 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut children_entries: Option<Punctuated<args::ChildEntry, syn::token::Comma>> = None;
     let mut default_component_impl = false;
 
-    // --- Moved declarations to top ---
     let mut has_default_derive_initial = false;
     let mut has_debug_derive_initial = false;
-    // --- End moved declarations ---
 
     // Parse the attributes provided to the `#[component]` macro.
     // This block handles attributes like `children(...)` and `default`.
@@ -93,7 +101,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                     } else if lookahead.peek(syn::Ident) {
                         let ident: Ident = input.parse()?;
                         if ident == "default" {
-                            // New branch for default
                             default_component_impl = true;
                         } else {
                             return Err(lookahead.error());
@@ -160,8 +167,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         unnamed: _unnamed, ..
     }) = &mut ast.fields
     {
-        // For tuple structs, we can't easily add named fields. This case is complex.
-        // For simplicity, we'll assume named fields for now or panic.
         panic!("#[component] does not support unnamed fields when adding children automatically.");
     } else {
         // Unit struct, add named children field
@@ -179,7 +184,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         });
     }
 
-    // --- Moved this block here to set has_default_derive_initial before use ---
     for attr in &ast.attrs {
         if attr.path().is_ident("derive") {
             attr.parse_nested_meta(|meta| {
@@ -194,11 +198,8 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             .expect("Failed to parse derive attribute");
         }
     }
-    // --- End moved block ---
 
     // Remove any existing `derive(Default)` and `derive(Debug)` attributes from the struct.
-    // This is done to ensure that the macro-generated `Default` implementation is used,
-    // and to control the `Debug` derive for consistency.
     ast.attrs.retain(|attr| {
         if attr.path().is_ident("derive") {
             let mut keep = true;
@@ -221,8 +222,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     // Generate the `Default` implementation for the struct.
-    // If `children` are specified in the macro attribute, they are initialized here.
-    // Otherwise, an empty `BTreeMap` is used for `children`.
     let default_impl = if let Some(entries) = children_entries {
         let children_inits = entries.iter().map(|entry| {
             let key = &entry.key;
@@ -237,17 +236,12 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             for field in named.iter() {
                 let field_name = field.ident.as_ref().unwrap();
                 if field_name == &children_field_name {
-                    // Use the actual children field name
                     field_initializers.push(quote! { #field_name: children_map });
                 } else {
                     field_initializers.push(quote! { #field_name: Default::default() });
                 }
             }
         } else {
-            // Handle unit structs or unnamed fields if necessary, though the macro panics for unnamed fields.
-            // For unit structs, we've already added named fields, so this branch might not be hit.
-            // If it is, it means the original struct was a unit struct and we added fields.
-            // In that case, we need to initialize the added fields.
             field_initializers.push(quote! { children: children_map });
             field_initializers.push(quote! { _area: Default::default() });
             field_initializers.push(quote! { _active: Default::default() });
@@ -266,9 +260,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
     } else {
-        // If no children are specified, provide a basic default impl
-        // This will ensure that `children`, `_active`, `_action_tx` are initialized
-        // and other fields are initialized via `Default::default()`
         let mut field_initializers = Vec::new();
         if let Fields::Named(FieldsNamed { named, .. }) = &ast.fields {
             for field in named.iter() {
@@ -299,8 +290,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     // Generate the `Component` trait implementation.
-    // If the `default` attribute is present, a basic `draw` method is provided.
-    // Otherwise, the `draw` method must be implemented manually by the user.
     let component_impl = if default_component_impl {
         quote! {
             impl weavetui_core::Component for #name {
@@ -322,8 +311,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     // Generate the `ComponentAccessor` trait implementation.
-    // This trait provides methods for accessing component properties like name, active state, and children,
-    // as well as methods for sending actions.
     let expanded = quote! {
         #ast // The modified struct definition
 
