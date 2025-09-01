@@ -42,16 +42,16 @@
 /// This prelude re-exports the most commonly used traits and types from the `weavetui` ecosystem.
 pub mod prelude {
     pub use weavetui_core::{
+        Component, ComponentAccessor,
         app::App,
+        components,
         event::{Action, Event},
-        macros::*,
-        keyboard::{key_event_to_string, KeyBindings},
+        kb,
+        keyboard::{KeyBindings, key_event_to_string},
         tui::Tui,
-        Component,
-        ComponentAccessor,
     };
     pub use weavetui_derive::component;
 }
 
-pub use weavetui_core::{app, event, kb, components, keyboard, tui, Component, ComponentAccessor};
+pub use weavetui_core::{Component, ComponentAccessor, app, components, event, kb, keyboard, tui};
 pub use weavetui_derive::component;
