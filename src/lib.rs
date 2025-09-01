@@ -44,7 +44,7 @@ pub mod prelude {
     pub use weavetui_core::{
         app::App,
         event::{Action, Event},
-        kb,
+        macros::*,
         keyboard::{key_event_to_string, KeyBindings},
         tui::Tui,
         Component,
@@ -53,5 +53,5 @@ pub mod prelude {
     pub use weavetui_derive::component;
 }
 
-pub use weavetui_core::{app, event, kb, keyboard, tui, Component, ComponentAccessor};
-pub use weavetui_derive::*;
+pub use weavetui_core::{app, event, kb, components, keyboard, tui, Component, ComponentAccessor};
+pub use weavetui_derive::component;
