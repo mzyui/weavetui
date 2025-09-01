@@ -39,7 +39,7 @@ impl Component for Counter {
 
         let text = format!(
             "This is a tui template.\n\n\
-            Press Ctrl-C` to stop running.\n\
+            Press `Ctrl-C` to stop running.\n\
             Press left and right to increment and decrement the counter respectively\n\
             Press `r` to reset the counter\n\n\
             Counter: {}",
