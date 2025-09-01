@@ -795,8 +795,8 @@ dependencies = [
  "strum 0.27.2",
  "tokio",
  "tokio-util",
- "weavetui_core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "weavetui_derive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "weavetui_core 0.1.1",
+ "weavetui_derive",
 ]
 
 [[package]]
@@ -832,18 +832,6 @@ dependencies = [
 [[package]]
 name = "weavetui_derive"
 version = "0.1.1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
- "weavetui_core 0.1.1",
-]
-
-[[package]]
-name = "weavetui_derive"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0a9b3877844a734e63199c4f3f6b82f42c8d324d66963748df36e6fe028d3d9"
 dependencies = [
  "proc-macro2",
  "quote",
