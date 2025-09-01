@@ -53,6 +53,11 @@ pub struct Tui {
 }
 
 impl Tui {
+    /// Creates a new `Tui` instance.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the new `Tui` instance, or an error if initialization fails.
     pub fn new() -> anyhow::Result<Self> {
         let tick_rate = 4.0;
         let frame_rate = 60.0;
@@ -159,6 +164,7 @@ impl Tui {
                                 CrosstermEvent::Paste(s) => {
                                     _event_tx.send(Event::Paste(s)).expect("Failed to send Paste event");
                                 },
+
                             }
                         }
                         Some(Err(_)) => {

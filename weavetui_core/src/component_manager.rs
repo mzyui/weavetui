@@ -10,8 +10,8 @@ use crate::{
 /// Recursively draws a component and its children.
 ///
 /// This function first checks if the component has an area and is active. If so, it calls
-/// the component's `draw` method. It then iterates over the children, sets their area if not
-/// already set, and calls `handle_draw` for each child.
+/// the component's `draw` method. It then recursively iterates over the children, sets their area if not
+/// already set, and calls `handle_draw` for each child, effectively performing a depth-first traversal of the component tree.
 ///
 /// # Arguments
 ///
@@ -35,7 +35,8 @@ pub fn handle_draw<T: Component + ?Sized>(c: &mut T, f: &mut Frame<'_>) {
 /// Recursively updates a component and its children based on a received action.
 ///
 /// This function calls the component's `update` method if it is active, and then
-/// recursively calls `update` for all its children.
+/// recursively calls `update` for all its children, ensuring that the action is propagated
+/// throughout the entire component subtree.
 ///
 /// # Arguments
 ///
@@ -54,7 +55,7 @@ pub fn update<T: Component + ?Sized>(c: &mut T, action: &Action) {
 /// Recursively handles a string message for a component and its children.
 ///
 /// This function calls the component's `on_event` method if it is active, and then
-/// recursively calls `handle_message` for all its children.
+/// recursively calls `handle_message` for all its children, propagating the message down the component tree.
 ///
 /// # Arguments
 ///
@@ -73,7 +74,7 @@ pub fn handle_message<T: Component + ?Sized>(c: &mut T, message: &str) {
 /// Recursively initializes a component and its children.
 ///
 /// This function calls the component's `init` method, and then recursively calls `init`
-/// for all its children.
+/// for all its children, ensuring the entire component subtree is initialized.
 ///
 /// # Arguments
 ///
@@ -90,7 +91,8 @@ pub fn init<T: Component + ?Sized>(c: &mut T, area: Rect) {
 /// Recursively sets the action handler for a component and its children.
 ///
 /// This function calls the component's `register_action_handler` method, and then
-/// recursively calls `receive_action_handler` for all its children.
+/// recursively calls `receive_action_handler` for all its children, ensuring that all components
+/// in the subtree can send actions.
 ///
 /// # Arguments
 ///
@@ -109,7 +111,7 @@ pub fn receive_action_handler<T: Component + ?Sized>(c: &mut T, tx: UnboundedSen
 /// If the component is active, this function dispatches the event to the appropriate
 /// handler (`handle_key_events`, `handle_mouse_events`, etc.). Any resulting action is
 /// collected. It then recursively calls `handle_event_for` for all children and extends
-/// the list of actions with the results.
+/// the list of actions with the results, effectively gathering all actions from the component subtree.
 ///
 /// # Arguments
 ///
@@ -150,7 +152,8 @@ pub fn handle_event_for<T: Component + ?Sized>(c: &mut T, event: &Option<Event>)
 /// Recursively collects custom keybindings from a component and its children.
 ///
 /// This function gets the keybindings from the component and extends the provided `KeyBindings`
-/// with them. It then recursively calls itself for all children.
+/// with them. It then recursively calls itself for all children, aggregating all keybindings
+/// from the entire component subtree.
 ///
 /// # Arguments
 ///

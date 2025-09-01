@@ -27,7 +27,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use event::Action;
 
-use crate::{event::Event, keyboard::KeyBindings};
+use crate::{event::Event, keyboard::KeyBindings, theme::ThemeManager};
 
 /// A type alias for a `BTreeMap` that stores child components.
 ///
@@ -62,7 +62,6 @@ impl ComponentHandler {
     }
 
     /// Handles input events and returns a list of resulting actions.
-    /// Handles input events and returns a list of resulting actions.
     pub(crate) fn handle_events(&mut self, event: &Option<Event>) -> Vec<Action> {
         component_manager::handle_event_for(self.c.as_mut(), event)
     }
@@ -82,7 +81,7 @@ impl ComponentHandler {
         component_manager::handle_draw(self.c.as_mut(), f);
     }
 
-    /// Handles custom keybindings for the component.
+    /// Collects and registers custom keybindings from the component and its children.
     /// This function is called by the application to allow components to register their own keybindings.
     pub(crate) fn handle_custom_keybindings(&mut self, kb: &mut KeyBindings) {
         component_manager::custom_keybindings(self.c.as_mut(), kb);
@@ -126,6 +125,12 @@ pub trait ComponentAccessor: Debug {
     /// Gets all child components. This is necessary if the component has children,
     /// as it will be used by other functions to have knowledge of the children.
     fn get_children(&mut self) -> &mut Children;
+
+    /// Gets the theme manager for the component.
+    fn get_theme_manager(&self) -> &ThemeManager;
+
+    /// Sets the theme manager for the component.
+    fn set_theme_manager(&mut self, theme_manager: ThemeManager);
 }
 
 impl_downcast!(Component);
@@ -137,162 +142,201 @@ impl_downcast!(Component);
 ///
 /// Implementors must also implement `ComponentAccessor` and `Downcast`.
 pub trait Component: ComponentAccessor + Downcast {
-    /// Initialize the component with a specified area if necessary. Usefull for components that
-    /// need to performe some initialization before the first render.
+    /// Initializes the component, optionally using the provided area.
+    ///
+    /// This method is called once before the first render, allowing the component to perform
+    /// any necessary setup, such as initializing state or creating resources.
+    /// The default implementation does nothing.
     ///
     /// # Arguments
     ///
-    /// * `area` - Rectangular area where the component will be rendered the first time.
+    /// * `area` - The initial rectangular area assigned to the component.
     #[allow(unused)]
     fn init(&mut self, area: Rect) {}
 
-    /// Render the component on the screen. (REQUIRED)
+    /// Renders the component within the given area of the frame.
+    ///
+    /// This method is called on each render cycle and is responsible for drawing the component's UI.
     ///
     /// # Arguments
     ///
-    /// * `f` - A frame used for rendering.
+    /// * `f` - The frame to render on.
     /// * `area` - The area in which the component should be drawn.
     fn draw(&mut self, f: &mut Frame<'_>, area: Rect);
 
-    /// Returns the `KeyBindings` for this component.
+    /// Returns the keybindings for this component.
     ///
-    /// `KeyBindings` are used to display keybinding hints to the user.
+    /// These keybindings can be used to display help to the user or for other introspective purposes.
+    /// The default implementation returns an empty set of keybindings.
     fn keybindings(&self) -> KeyBindings {
         KeyBindings::default()
     }
 
-    /// Handle key events and produce actions if necessary.
+    /// Handles key press events.
+    ///
+    /// This method is called when a key event is received and the component is active.
+    /// It can be used to trigger actions based on user input.
+    /// The default implementation does nothing.
     ///
     /// # Arguments
     ///
-    /// * `key` - A key event to be processed.
+    /// * `key` - The `KeyEvent` to be processed.
     ///
     /// # Returns
     ///
-    /// * `Option<Action>` - An action to be processed or none.
+    /// An `Option<Action>` which is `Some` if the event triggered an action, and `None` otherwise.
     #[allow(unused_variables)]
     fn handle_key_events(&mut self, key: KeyEvent) -> Option<Action> {
         None
     }
 
-    /// Handle mouse events and produce actions if necessary.
+    /// Handles mouse events.
+    ///
+    /// This method is called when a mouse event is received and the component is active.
+    /// It can be used to handle clicks, scrolls, and other mouse interactions.
+    /// The default implementation does nothing.
     ///
     /// # Arguments
     ///
-    /// * `mouse` - A mouse event to be processed.
+    /// * `mouse` - The `MouseEvent` to be processed.
     ///
     /// # Returns
     ///
-    /// * `Option<Action>` - An action to be processed or none.
+    /// An `Option<Action>` which is `Some` if the event triggered an action, and `None` otherwise.
     #[allow(unused_variables)]
     fn handle_mouse_events(&mut self, mouse: MouseEvent) -> Option<Action> {
         None
     }
 
-    /// Handle Tick events and produce actions if necessary.
+    /// Handles tick events.
+    ///
+    /// This method is called on each application tick, allowing for periodic updates or animations.
+    /// The default implementation does nothing.
     ///
     /// # Returns
     ///
-    /// * `Option<Action>` - An action to be processed or none.
+    /// An `Option<Action>` which is `Some` if the tick triggered an action, and `None` otherwise.
     #[allow(unused_variables)]
     fn handle_tick_event(&mut self) -> Option<Action> {
         None
     }
 
-    /// Handle frame events and produce actions if necessary.
+    /// Handles frame events.
+    ///
+    /// This method is called on each render frame, allowing for frame-based animations or updates.
+    /// The default implementation does nothing.
     ///
     /// # Returns
     ///
-    /// * `Option<Action>` - An action to be processed or none.
+    /// An `Option<Action>` which is `Some` if the frame event triggered an action, and `None` otherwise.
     #[allow(unused_variables)]
     fn handle_frame_event(&mut self) -> Option<Action> {
         None
     }
 
-    /// Handle paste events and produce actions if necessary.
+    /// Handles paste events.
+    ///
+    /// This method is called when text is pasted into the terminal.
+    /// The default implementation does nothing.
     ///
     /// # Arguments
     ///
-    /// * `message` - A string message to be processed.
+    /// * `message` - The pasted string.
     ///
     /// # Returns
     ///
-    /// * `Option<Action>` - An action to be processed or none.
+    /// An `Option<Action>` which is `Some` if the event triggered an action, and `None` otherwise.
     #[allow(unused_variables)]
     fn handle_paste_event(&mut self, message: &str) -> Option<Action> {
         None
     }
 
-    /// Update the state of the component based on a received action.
+    /// Updates the component's state based on a received action.
+    ///
+    /// This method is called for every action that is dispatched in the application,
+    /// allowing the component to react to changes in the application state.
+    /// The default implementation does nothing.
     ///
     /// # Arguments
     ///
-    /// * `action` - An action that may modify the state of the component.
+    /// * `action` - The `Action` to be processed.
     #[allow(unused_variables)]
     fn update(&mut self, action: &Action) {}
 
-    /// Receive a custom event, probably from another component.
+    /// Handles custom string-based events.
+    ///
+    /// This method allows components to communicate with each other using simple string messages.
+    /// The default implementation does nothing.
+    ///
     /// # Arguments
     ///
-    /// * `message` - A string message to be processed.
+    /// * `message` - The string message to be processed.
     #[allow(unused_variables)]
     fn on_event(&mut self, message: &str) {}
 
-    /// Get a child component by name as a mutable reference.
+    /// Gets a mutable reference to a child component by name.
     ///
-    /// The method will return the child as a mutable reference to a `Box<dyn Component>`, which
-    /// means that the caller will have to downcast it to the desired type if necessary.
+    /// This allows for modifying the state of a child component.
+    /// The returned value is a `Box<dyn Component>`, which may need to be downcasted
+    /// to the specific child component type.
+    ///
+    /// # Example
     ///
     /// ```ignore
-    /// let child = self.child_mut("child_name").unwrap();
-    ///
-    /// if let Some(downcasted_child) = child.downcast_mut::<MyComponent>() {
-    ///    // do something with the downcasted child    
+    /// if let Some(child) = self.child_mut("child_name") {
+    ///     if let Some(downcasted_child) = child.downcast_mut::<MyComponent>() {
+    ///         // do something with the downcasted child
+    ///     }
     /// }
     /// ```
     ///
     /// # Arguments
+    ///
     /// * `name` - The name of the child component.
     ///
     /// # Returns
-    /// * `Option<&mut Box<dyn Component>>` - A mutable reference to the child component or none.
+    ///
+    /// An `Option` containing a mutable reference to the child component, or `None` if not found.
     fn child_mut(&mut self, name: &str) -> Option<&mut Box<dyn Component>> {
         self.get_children().get_mut(name)
     }
 
-    /// Get a child component by name as an immutable reference.
+    /// Gets an immutable reference to a child component by name.
     ///
-    /// The method will return the child as a reference to a `Box<dyn Component>`, which means that
-    /// the caller will have to downcast it to the desired type if necessary.
+    /// This allows for accessing the state of a child component.
+    /// The returned value is a `Box<dyn Component>`, which may need to be downcasted
+    /// to the specific child component type.
+    ///
+    /// # Example
     ///
     /// ```ignore
-    /// let child = self.child("child_name").unwrap();
-    ///
-    /// if let Some(downcasted_child) = child.downcast_ref::<MyComponent>() {
-    ///     // do something with the downcasted child
+    /// if let Some(child) = self.child("child_name") {
+    ///     if let Some(downcasted_child) = child.downcast_ref::<MyComponent>() {
+    ///         // do something with the downcasted child
+    ///     }
     /// }
     /// ```
     ///
-    /// ... or just use the [child_downcast] utility functions.
-    ///
     /// # Arguments
+    ///
     /// * `name` - The name of the child component.
     ///
     /// # Returns
-    /// * `Option<&Box<dyn Component>>` - A reference to the child component or none.
+    ///
+    /// An `Option` containing a reference to the child component, or `None` if not found.
     #[allow(clippy::borrowed_box)] // Intentional to allow direct downcasting of the Box
     fn child(&mut self, name: &str) -> Option<&Box<dyn Component>> {
         self.get_children().get(name)
     }
 
-    /// Notify the component that its active state has changed.
+    /// Called when the component's active state changes.
     ///
-    /// Whenever the active state of a component changes, the component will be notified through
-    /// this method. This is useful for components that need to perform some action when they are
-    /// activated or deactivated.
+    /// This method is a hook that allows the component to react to being activated or deactivated.
+    /// The default implementation does nothing.
     ///
     /// # Arguments
-    /// * `active` - The new active state of the component.
+    ///
+    /// * `active` - The new active state.
     #[allow(unused_variables)]
     fn on_active_changed(&mut self, active: bool) {}
 }
