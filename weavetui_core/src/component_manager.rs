@@ -4,6 +4,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
     event::{Action, Event},
     keyboard::KeyBindings,
+    theme::ThemeManager,
     Component,
 };
 
@@ -165,5 +166,23 @@ pub fn custom_keybindings<T: Component + ?Sized>(c: &mut T, kb: &mut KeyBindings
 
     for child in c.get_children().values_mut() {
         custom_keybindings(child.as_mut(), kb);
+    }
+}
+
+/// Recursively sets the theme manager for a component and its children.
+///
+/// This function sets the theme manager for the given component and then recursively
+/// calls itself for all children, ensuring that the theme is propagated throughout
+/// the entire component subtree.
+///
+/// # Arguments
+///
+/// * `c` - The component to set the theme manager for.
+/// * `th` - The `ThemeManager` to set.
+pub fn handle_theme<T: Component + ?Sized>(c: &mut T, th: &ThemeManager) {
+    c.set_theme_manager(th.clone());
+
+    for child in c.get_children().values_mut() {
+        handle_theme(child.as_mut(), th);
     }
 }

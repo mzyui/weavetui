@@ -86,6 +86,11 @@ impl ComponentHandler {
     pub(crate) fn handle_custom_keybindings(&mut self, kb: &mut KeyBindings) {
         component_manager::custom_keybindings(self.c.as_mut(), kb);
     }
+
+    /// Handles the theme for the component and its children.
+    pub(crate) fn handle_theme(&mut self, th: ThemeManager) {
+        component_manager::handle_theme(self.c.as_mut(), &th);
+    }
 }
 
 /// A trait that provides access to the basic properties of a component.

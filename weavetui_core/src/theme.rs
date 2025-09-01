@@ -32,8 +32,9 @@ impl Theme {
     ///
     /// * `name` - The name to associate with the style.
     /// * `style` - The `Style` to add.
-    pub fn add_style(&mut self, name: String, style: Style) {
+    pub fn add_style(mut self, name: String, style: Style) -> Self {
         self.styles.insert(name, style);
+        self
     }
 
     /// Adds a new color to the theme.
@@ -42,8 +43,9 @@ impl Theme {
     ///
     /// * `name` - The name to associate with the color.
     /// * `color` - The `Color` to add.
-    pub fn add_color(&mut self, name: String, color: Color) {
+    pub fn add_color(mut self, name: String, color: Color) -> Self {
         self.colors.insert(name, color);
+        self
     }
 
     /// Retrieves a style by its name.
@@ -152,4 +154,3 @@ impl ThemeManager {
             .unwrap_or(Color::Reset)
     }
 }
-

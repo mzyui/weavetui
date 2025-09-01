@@ -22,6 +22,8 @@ use {
 };
 
 pub type IO = std::io::Stdout;
+
+/// Returns a handle to the standard output.
 fn io() -> IO {
     std::io::stdout()
 }
@@ -31,6 +33,18 @@ fn io() -> IO {
 /// This struct encapsulates a `ratatui::Terminal` and handles the event loop,
 /// mapping crossterm events to `weavetui`'s own `Event` enum. It also emits
 /// `Tick` and `Render` events at a configurable rate.
+///
+/// # Fields
+///
+/// * `terminal` - The `ratatui` terminal instance.
+/// * `task` - The handle to the Tokio task that runs the event loop.
+/// * `cancellation_token` - The cancellation token for the event loop task.
+/// * `event_rx` - The receiver for events.
+/// * `event_tx` - The sender for events.
+/// * `frame_rate` - The frame rate for rendering.
+/// * `tick_rate` - The tick rate for application updates.
+/// * `mouse` - Flag to enable/disable mouse capture.
+/// * `paste` - Flag to enable/disable bracketed paste.
 pub struct Tui {
     /// The `ratatui` terminal instance.
     pub terminal: ratatui::Terminal<Backend<IO>>,
