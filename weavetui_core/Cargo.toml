@@ -1,6 +1,6 @@
 [package]
 name = "weavetui_core"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Val <alviandtm@gmail.com>"]
 description = "Core traits and utilities for weavetui TUI framework."

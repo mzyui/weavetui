@@ -7,7 +7,7 @@ members = [
 
 [package]
 name = "weavetui"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Val <alviandtm@gmail.com>"]
 description = "A modern, robust, and modular Text User Interface (TUI) framework for Rust."
