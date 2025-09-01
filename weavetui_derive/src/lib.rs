@@ -17,7 +17,7 @@ mod args;
 /// for a struct, turning it into a `weavetui` component.
 ///
 /// This macro simplifies component creation by:
-/// - Automatically injecting necessary fields: `children`, `_area`, `_active`, and `_action_tx`.
+/// - Automatically injecting necessary fields: `children`, `_area`, `_active`, `_action_tx`, and `_theme_manager`.
 /// - Generating a `Default` implementation that initializes children.
 /// - Providing default implementations for the `ComponentAccessor` trait.
 ///
