@@ -7,6 +7,10 @@ use ratatui::{
 use weavetui_core::{Component, ComponentAccessor, app::App, components, event::Action, kb};
 use weavetui_derive::component;
 
+const INCREMENT_EVENT: &str = "app:increment";
+const DECREMENT_EVENT: &str = "app:decrement";
+const RESET_EVENT: &str = "app:reset";
+
 #[component]
 pub struct Counter {
     pub counter: u32,
@@ -20,6 +24,10 @@ impl Counter {
     pub fn decrement_counter(&mut self) {
         self.counter = self.counter.saturating_sub(1);
     }
+
+    pub fn reset_counter(&mut self) {
+        self.counter = 0;
+    }
 }
 
 impl Component for Counter {
@@ -30,9 +38,10 @@ impl Component for Counter {
             .border_type(BorderType::Rounded);
 
         let text = format!(
-            "This is a tui template.\n\
+            "This is a tui template.\n\n\
             Press Ctrl-C` to stop running.\n\
-            Press left and right to increment and decrement the counter respectively\n\n\
+            Press left and right to increment and decrement the counter respectively\n\
+            Press `r` to reset the counter\n\n\
             Counter: {}",
             self.counter
         );
@@ -48,8 +57,9 @@ impl Component for Counter {
 
     fn on_event(&mut self, message: &str) {
         match message {
-            "app:increment" => self.increment_counter(),
-            "app:decrement" => self.decrement_counter(),
+            INCREMENT_EVENT => self.increment_counter(),
+            DECREMENT_EVENT => self.decrement_counter(),
+            RESET_EVENT => self.reset_counter(),
             _ => {}
         }
     }
@@ -63,8 +73,9 @@ async fn main() -> anyhow::Result<()> {
         .with_components(components![simple_component])
         .with_keybindings(kb![
             "<ctrl-c>" => Action::Quit,
-            "<right>" => "app:increment",
-            "<left>" => "app:decrement"
+            "<right>" => INCREMENT_EVENT,
+            "<left>" => DECREMENT_EVENT,
+            "<r>" => RESET_EVENT
         ]);
 
     app.run().await?;
