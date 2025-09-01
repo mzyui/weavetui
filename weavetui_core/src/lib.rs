@@ -18,6 +18,7 @@ pub mod component_manager;
 pub mod event;
 pub mod keyboard;
 pub mod macros;
+pub mod theme;
 pub mod tui;
 
 use crossterm::event::{KeyEvent, MouseEvent};
