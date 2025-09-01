@@ -10,6 +10,7 @@ use tokio::sync::mpsc::{self, error::TryRecvError};
 use crate::{
     event::{Action, ActionKind, Event},
     keyboard::KeyBindings,
+    theme::{Theme, ThemeManager},
     tui::Tui,
     Component, ComponentHandler,
 };
@@ -28,6 +29,7 @@ pub struct App {
     mouse: bool,
     paste: bool,
     component_handlers: Vec<ComponentHandler>,
+    theme_manager: ThemeManager,
     action_tx: mpsc::UnboundedSender<Action>,
     action_rx: mpsc::UnboundedReceiver<Action>,
 }
@@ -39,6 +41,7 @@ impl Default for App {
             last_tick_key_events: Vec::default(),
             keybindings: KeyBindings::default(),
             component_handlers: Vec::new(),
+            theme_manager: ThemeManager::default(),
             frame_rate: 24.into(),
             tick_rate: 1.into(),
             should_quit: false,
@@ -164,6 +167,26 @@ impl App {
         self
     }
 
+    /// Adds a theme to the application.
+    ///
+    /// If no active theme is set, this theme will be set as the active theme.
+    ///
+    /// # Arguments
+    ///
+    /// * `theme` - The `Theme` to add.
+    ///
+    /// # Returns
+    ///
+    /// The modified `App` instance.
+    pub fn add_theme(mut self, theme: Theme) -> Self {
+        if self.theme_manager.get_active_theme().is_none() {
+            self.theme_manager.set_active_theme(&theme.name);
+        }
+
+        self.theme_manager.add_theme(theme);
+        self
+    }
+
     /// Sends an `Action` to the application's action channel.
     ///
     /// This method is used internally to dispatch actions that need to be processed by the `App`
@@ -210,6 +233,7 @@ impl App {
 
         for handler in self.component_handlers.iter_mut() {
             handler.receive_action_handler(self.action_tx.clone());
+            handler.handle_theme(self.theme_manager.clone());
             handler.handle_custom_keybindings(&mut self.keybindings);
         }
 
