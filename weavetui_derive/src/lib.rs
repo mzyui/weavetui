@@ -8,8 +8,8 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    parse::ParseStream, parse_macro_input, parse_quote, punctuated::Punctuated, Fields, FieldsNamed,
-    FieldsUnnamed, Ident, ItemStruct,
+    Fields, FieldsNamed, FieldsUnnamed, Ident, ItemStruct, parse::ParseStream, parse_macro_input,
+    parse_quote, punctuated::Punctuated,
 };
 mod args;
 
@@ -37,10 +37,13 @@ mod args;
 ///
 /// # Injected Fields
 ///
-/// - `pub children: BTreeMap<String, Box<dyn Component>>`: A map to hold child components.
-/// - `_area: Option<ratatui::layout::Rect>`: The area assigned to the component for rendering.
-/// - `_active: bool`: The active state of the component.
-/// - `_action_tx: Option<UnboundedSender<Action>>`: A sender for dispatching actions.
+/// When you use the `#[component]` attribute, the following fields are automatically added to your struct if they are not already present:
+///
+/// - `pub children: BTreeMap<String, Box<dyn Component>>`: A map to hold child components, allowing for nested UI structures.
+/// - `_area: Option<ratatui::layout::Rect>`: Stores the rendering area assigned to the component by its parent.
+/// - `_active: bool`: A flag indicating whether the component is currently active and should respond to events.
+/// - `_action_tx: Option<UnboundedSender<Action>>`: A channel sender for dispatching actions to the application's central event loop.
+/// - `_theme_manager: weavetui_core::theme::ThemeManager`: Manages the theme and styles for the component and its children.
 ///
 /// # Example
 ///
@@ -163,6 +166,12 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                 parse_quote! { _action_tx: Option<tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>> },
             );
         }
+        if !named
+            .iter()
+            .any(|f| f.ident.as_ref().is_some_and(|i| i == "_theme_manager"))
+        {
+            named.push(parse_quote! { _theme_manager: weavetui_core::theme::ThemeManager });
+        }
     } else if let Fields::Unnamed(FieldsUnnamed {
         unnamed: _unnamed, ..
     }) = &mut ast.fields
@@ -178,6 +187,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         named_fields.push(
             parse_quote! { _action_tx: Option<tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>> },
         );
+        named_fields.push(parse_quote! { _theme_manager: weavetui_core::theme::ThemeManager });
         ast.fields = Fields::Named(FieldsNamed {
             brace_token: syn::token::Brace::default(),
             named: named_fields,
@@ -246,6 +256,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             field_initializers.push(quote! { _area: Default::default() });
             field_initializers.push(quote! { _active: Default::default() });
             field_initializers.push(quote! { _action_tx: Default::default() });
+            field_initializers.push(quote! { _theme_manager: Default::default() });
         }
 
         quote! {
@@ -276,6 +287,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             field_initializers.push(quote! { _area: Default::default() });
             field_initializers.push(quote! { _active: Default::default() });
             field_initializers.push(quote! { _action_tx: Default::default() });
+            field_initializers.push(quote! { _theme_manager: Default::default() });
         }
 
         quote! {
@@ -365,6 +377,14 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
 
             fn get_children(&mut self) -> &mut weavetui_core::Children {
                 &mut self.children
+            }
+
+            fn get_theme_manager(&self) -> &weavetui_core::theme::ThemeManager {
+                &self._theme_manager
+            }
+
+            fn set_theme_manager(&mut self, theme_manager: weavetui_core::theme::ThemeManager) {
+                self._theme_manager = theme_manager.clone();
             }
         }
 
