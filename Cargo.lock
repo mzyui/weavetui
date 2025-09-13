@@ -801,9 +801,7 @@ dependencies = [
 
 [[package]]
 name = "weavetui_core"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e3371c103d7019e4583abcda38ec590b0245c7dee6475daeed5dcfde4253fe4"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "crossterm 0.29.0",
@@ -818,6 +816,8 @@ dependencies = [
 [[package]]
 name = "weavetui_core"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da9cc3fc095376faf7e53a9679a3a8879dfad6b22d35ca648e7e92f9cbd0946a"
 dependencies = [
  "anyhow",
  "crossterm 0.29.0",
@@ -835,8 +835,10 @@ version = "0.1.2"
 dependencies = [
  "proc-macro2",
  "quote",
+ "ratatui",
  "syn",
- "weavetui_core 0.1.1",
+ "tokio",
+ "weavetui_core 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
