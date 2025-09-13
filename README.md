@@ -7,8 +7,8 @@
 <div align="center">
 
 | **Crate**           | **Version**                                                                                             | **Docs**                                                                                              |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| [`weavetui`](https://github.com/mzyui/weavetui/tree/main/weavetui)          | [![crates.io](https://img.shields.io/crates/v/weavetui.svg)](https://crates.io/crates/weavetui)             | [![docs.rs](https://img.shields.io/docsrs/weavetui)](https://docs.rs/weavetui)                         |
+| --- | --- | --- |
+| `weavetui`         | [![crates.io](https://img.shields.io/crates/v/weavetui.svg)](https://crates.io/crates/weavetui)             | [![docs.rs](https://img.shields.io/docsrs/weavetui)](https://docs.rs/weavetui)                         |
 | [`weavetui_core`](https://github.com/mzyui/weavetui/tree/main/weavetui_core)     | [![crates.io](https://img.shields.io/crates/v/weavetui_core.svg)](https://crates.io/crates/weavetui_core) | [![docs.rs](https://img.shields.io/docsrs/weavetui_core)](https://docs.rs/weavetui_core)             |
 | [`weavetui_derive`](https://github.com/mzyui/weavetui/tree/main/weavetui_derive)   | [![crates.io](https://img.shields.io/crates/v/weavetui_derive.svg)](https://crates.io/crates/weavetui_derive) | [![docs.rs](https://img.shields.io/docsrs/weavetui_derive)](https://docs.rs/weavetui_derive)         |
 
