@@ -28,12 +28,13 @@ strum = { version = "0.27.2", features = ["derive"] }
 futures-util = "0.3.31"
 tokio-util = "0.7.16"
 ratatui = "0.29.0"
-weavetui_derive = { version = "0.1.1", path = "./weavetui_derive" }
-weavetui_core = { version = "0.1.1", path = "./weavetui_core" }
+weavetui_derive = { version = "0.1.2", path = "./weavetui_derive" }
+weavetui_core = { version = "0.1.2", path = "./weavetui_core" }
 anyhow = "1.0.99"
 
 [[example]]
 name = "counter_app"
 path = "examples/counter_app.rs"
+
 
 

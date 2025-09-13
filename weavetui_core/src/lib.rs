@@ -13,13 +13,18 @@ use downcast_rs::{impl_downcast, Downcast};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-pub mod app;
-pub mod component_manager;
-pub mod event;
-pub mod keyboard;
-pub mod macros;
 pub mod theme;
 pub mod tui;
+pub mod keyboard;
+pub mod event;
+pub mod macros;
+pub mod component_manager;
+pub mod app;
+pub mod internal;
+
+pub use internal::ComponentContext;
+
+
 
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{layout::Rect, Frame};
