@@ -13,6 +13,8 @@ use syn::{
 };
 mod args;
 
+
+
 /// Implements the `weavetui_core::Component` and `weavetui_core::ComponentAccessor` traits
 /// for a struct, turning it into a `weavetui` component.
 ///
@@ -120,74 +122,32 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         .expect("Failed to parse attribute: expected `children(...)` or `default`");
     }
 
-    let actual_children_type =
-        quote! { std::collections::BTreeMap<String, Box<dyn weavetui_core::Component>> };
-
-    let children_field_name = Ident::new("children", name.span());
-    let mut found_children_field = false;
+    let mut found_ctx_field = false;
     if let Fields::Named(FieldsNamed { named, .. }) = &mut ast.fields {
         for field in named.iter() {
             if field
                 .ident
                 .as_ref()
-                .is_some_and(|ident| ident == "children")
+                .is_some_and(|ident| ident == "_ctx")
             {
-                found_children_field = true;
+                found_ctx_field = true;
                 break;
             }
         }
-        if !found_children_field {
-            let new_children_field: syn::Field =
-                parse_quote! { pub #children_field_name: #actual_children_type };
-            named.push(new_children_field);
-        }
-
-        // Add _area field if not present
-        if !named
-            .iter()
-            .any(|f| f.ident.as_ref().is_some_and(|i| i == "_area"))
-        {
-            named.push(parse_quote! { _area: Option<ratatui::layout::Rect> });
-        }
-
-        // Add _active field if not present
-        if !named
-            .iter()
-            .any(|f| f.ident.as_ref().is_some_and(|i| i == "_active"))
-        {
-            named.push(parse_quote! { _active: bool });
-        }
-        // Add _action_tx field if not present
-        if !named
-            .iter()
-            .any(|f| f.ident.as_ref().is_some_and(|i| i == "_action_tx"))
-        {
-            named.push(
-                parse_quote! { _action_tx: Option<tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>> },
-            );
-        }
-        if !named
-            .iter()
-            .any(|f| f.ident.as_ref().is_some_and(|i| i == "_theme_manager"))
-        {
-            named.push(parse_quote! { _theme_manager: weavetui_core::theme::ThemeManager });
+        if !found_ctx_field {
+            let new_ctx_field: syn::Field = parse_quote! { pub _ctx: weavetui_core::ComponentContext };
+            named.push(new_ctx_field);
         }
     } else if let Fields::Unnamed(FieldsUnnamed {
         unnamed: _unnamed, ..
     }) = &mut ast.fields
     {
-        panic!("#[component] does not support unnamed fields when adding children automatically.");
+        panic!("#[component] does not support unnamed fields when adding `_ctx` automatically.");
     } else {
-        // Unit struct, add named children field
-        let new_children_field: syn::Field = parse_quote! { pub children: #actual_children_type };
+        // Unit struct, add named ctx field
+        let new_ctx_field: syn::Field = parse_quote! { pub _ctx: weavetui_core::ComponentContext };
         let mut named_fields = syn::punctuated::Punctuated::new();
-        named_fields.push(new_children_field);
-        named_fields.push(parse_quote! { _area: Option<ratatui::layout::Rect> });
-        named_fields.push(parse_quote! { _active: bool });
-        named_fields.push(
-            parse_quote! { _action_tx: Option<tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>> },
-        );
-        named_fields.push(parse_quote! { _theme_manager: weavetui_core::theme::ThemeManager });
+        named_fields.push(new_ctx_field);
         ast.fields = Fields::Named(FieldsNamed {
             brace_token: syn::token::Brace::default(),
             named: named_fields,
@@ -245,18 +205,14 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         if let Fields::Named(FieldsNamed { named, .. }) = &ast.fields {
             for field in named.iter() {
                 let field_name = field.ident.as_ref().unwrap();
-                if field_name == &children_field_name {
-                    field_initializers.push(quote! { #field_name: children_map });
+                if field_name == &Ident::new("_ctx", name.span()) {
+                    field_initializers.push(quote! { #field_name: weavetui_core::ComponentContext { children: children_map, ..Default::default() } });
                 } else {
                     field_initializers.push(quote! { #field_name: Default::default() });
                 }
             }
         } else {
-            field_initializers.push(quote! { children: children_map });
-            field_initializers.push(quote! { _area: Default::default() });
-            field_initializers.push(quote! { _active: Default::default() });
-            field_initializers.push(quote! { _action_tx: Default::default() });
-            field_initializers.push(quote! { _theme_manager: Default::default() });
+            field_initializers.push(quote! { _ctx: weavetui_core::ComponentContext { children: children_map, ..Default::default() } });
         }
 
         quote! {
@@ -275,19 +231,14 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         if let Fields::Named(FieldsNamed { named, .. }) = &ast.fields {
             for field in named.iter() {
                 let field_name = field.ident.as_ref().unwrap();
-                if field_name == &children_field_name {
-                    field_initializers
-                        .push(quote! { #field_name: std::collections::BTreeMap::new() });
+                if field_name == &Ident::new("_ctx", name.span()) {
+                    field_initializers.push(quote! { #field_name: weavetui_core::ComponentContext::default() });
                 } else {
                     field_initializers.push(quote! { #field_name: Default::default() });
                 }
             }
         } else {
-            field_initializers.push(quote! { children: std::collections::BTreeMap::new() });
-            field_initializers.push(quote! { _area: Default::default() });
-            field_initializers.push(quote! { _active: Default::default() });
-            field_initializers.push(quote! { _action_tx: Default::default() });
-            field_initializers.push(quote! { _theme_manager: Default::default() });
+            field_initializers.push(quote! { _ctx: weavetui_core::ComponentContext::default() });
         }
 
         quote! {
@@ -306,7 +257,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! {
             impl weavetui_core::Component for #name {
                 fn draw(&mut self, f: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect) {
-                    if let Some(area) = self.area() {
+                    if let Some(area) = self._ctx.area {
                         f.render_widget(
                             ratatui::widgets::Block::bordered()
                                 .title_top(ratatui::text::Line::from(format!(" {}: {} x {} ", weavetui_core::ComponentAccessor::name(self), area.height, area.width)))
@@ -334,38 +285,38 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
 
             fn area(&self) -> Option<ratatui::layout::Rect> {
-                self._area
+                self._ctx.area
             }
 
             fn set_area(&mut self, area: ratatui::layout::Rect) {
-                self._area = Some(area);
+                self._ctx.area = Some(area);
             }
 
             fn is_active(&self) -> bool {
-                self._active
+                self._ctx.active
             }
 
             fn set_active(&mut self, active: bool) {
-                self._active = active;
+                self._ctx.active = active;
                 (self as &mut dyn weavetui_core::Component).on_active_changed(active);
 
-                for child in self.children.values_mut() {
+                for child in self._ctx.children.values_mut() {
                     child.set_active(active);
                 }
             }
 
             fn register_action_handler(&mut self, tx: tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>) {
-                self._action_tx = Some(tx);
+                self._ctx.action_tx = Some(tx);
             }
 
             fn send(&self, action: &str) {
-                if let Some(tx) = &self._action_tx {
+                if let Some(tx) = &self._ctx.action_tx {
                     let _ = tx.send(weavetui_core::event::Action::AppAction(action.to_string()));
                 }
             }
 
             fn send_action(&self, action: weavetui_core::event::Action) {
-                if let Some(tx) = &self._action_tx {
+                if let Some(tx) = &self._ctx.action_tx {
                     let _ = tx.send(action);
                 }
             }
@@ -376,15 +327,15 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
 
             fn get_children(&mut self) -> &mut weavetui_core::Children {
-                &mut self.children
+                &mut self._ctx.children
             }
 
             fn get_theme_manager(&self) -> &weavetui_core::theme::ThemeManager {
-                &self._theme_manager
+                &self._ctx.theme_manager
             }
 
             fn set_theme_manager(&mut self, theme_manager: weavetui_core::theme::ThemeManager) {
-                self._theme_manager = theme_manager.clone();
+                self._ctx.theme_manager = theme_manager.clone();
             }
         }
 
