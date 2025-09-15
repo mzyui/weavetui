@@ -24,14 +24,15 @@
 
 `weavetui` is a modern, robust, and modular **Text User Interface (TUI) framework** for Rust, designed to simplify the development of sophisticated and interactive terminal applications. This repository serves as both the primary application showcasing the framework's capabilities and the foundational crates that enable its powerful component-based architecture.
 
-## ✨ Features
+## ✨ Why `weavetui`?
 
-*   **Component-Driven Architecture:** Leverage a declarative, component-based model for building complex UIs with ease.
-*   **Automatic Trait Implementation:** Utilize the `weavetui_derive` procedural macro for automatic implementation of `Component` and `ComponentAccessor` traits, significantly reducing boilerplate.
-*   **Modular Design:** Built with `weavetui_core` as its foundation, ensuring high modularity, maintainability, and extensibility.
-*   **Event Handling System:** A flexible event system for managing keyboard, mouse, and custom events within your TUI applications.
-*   **Real-world Application Example:** The `weavetui` application itself serves as a comprehensive example, demonstrating best practices for component composition, state management, and event handling.
-*   **Interactive User Experience:** Designed to deliver responsive and engaging user experiences directly within the terminal environment.
+`weavetui` empowers developers to build complex and interactive terminal applications with ease, offering:
+
+*   **Component-Driven Development:** Build UIs using reusable, self-contained components, making your code modular and maintainable.
+*   **Reduced Boilerplate:** Leverage procedural macros to automatically implement common traits, allowing you to focus on your application's unique logic.
+*   **Robust Event Handling:** A flexible and comprehensive event system handles keyboard, mouse, and custom events, ensuring a responsive user experience.
+*   **Clear Architecture:** A well-defined separation of concerns between core functionalities (`weavetui_core`) and macro-based development (`weavetui_derive`) promotes clarity and extensibility.
+*   **Interactive & Responsive:** Designed from the ground up to deliver engaging and fast-responding user interfaces directly within the terminal.
 
 ## 🚀 Getting Started
 
@@ -78,9 +79,9 @@ This repository is organized as a Rust workspace, containing the following crate
 *   `weavetui_core/`: A foundational library defining core TUI traits (`Component`, `ComponentAccessor`), event handling mechanisms, and utility functions.
 *   `weavetui_derive/`: A procedural macro crate providing the `#[component]` attribute for automatic trait implementation, simplifying component creation.
 
-## ⚙️ How `weavetui` Works
+## ⚙️ How `weavetui` Works: A Simplified Overview
 
-`weavetui` is designed to simplify the development of complex Text User Interface (TUI) applications in Rust. Its essence lies in its component-based architecture and the use of procedural macros to reduce boilerplate. Here's a detailed overview of how it works:
+`weavetui` simplifies TUI development in Rust through a component-based architecture and powerful procedural macros. Here's a breakdown of its core mechanics:
 
 ```mermaid
 graph TD
@@ -119,31 +120,29 @@ graph TD
 
 ### Detailed Explanation
 
-1.  **Developer Writes Component**: You define your UI as a `struct` in Rust and add the `#[component]` attribute above it. This attribute is the main key to simplifying the process.
+1.  **Define Your UI as Components**: You start by defining your UI elements as Rust `struct`s. By adding the `#[component]` attribute from `weavetui_derive` to your struct, you tell the framework that this struct should behave as a UI component.
 
-2.  **Compile Time (Macro Magic)**:
-    *   When you compile your project (`cargo build`), `weavetui_derive` (a *procedural macro*) becomes active.
-    *   This macro automatically writes boilerplate code for you. It implements two important traits from `weavetui_core`:
-        *   `Component`: Handles core logic such as `handle_key_events`, `handle_mouse_events`, and `draw`.
-        *   `ComponentAccessor`: Provides methods to access common properties like component name and active status.
+2.  **Automatic Trait Implementation (Compile Time)**:
+    *   During compilation, the `#[component]` macro automatically generates the necessary boilerplate code.
+    *   Specifically, it implements the `Component` and `ComponentAccessor` traits (defined in `weavetui_core`) for your struct. These traits provide the fundamental methods for handling events, drawing the UI, and managing component properties. This automation significantly reduces manual coding.
 
-3.  **Runtime (Application Running)**:
-    *   **Initialization**: Your main application starts, setting up the terminal for TUI rendering and creating a `ComponentManager`. This `ComponentManager` is responsible for managing the entire state and lifecycle of all components.
-    *   **Event Loop**: The application enters an infinite loop that continuously waits for three things: user input, internal events, and signals to re-render the UI.
+3.  **Application Lifecycle (Runtime)**:
+    *   **Initialization**: When your `weavetui` application starts, it sets up the terminal environment and initializes a `ComponentManager`. This manager is the central orchestrator, responsible for holding all your UI components and managing their state and interactions.
+    *   **Event Loop**: The application then enters a continuous loop, constantly monitoring for user input (like key presses or mouse clicks) and internal events, and triggering UI updates as needed.
 
-4.  **Event Cycle**:
-    *   **User Input**: When you press a key (e.g., `j` for down), the `EventHandler` captures it.
-    *   **Event Distribution**: This event is passed to the `ComponentManager`.
-    *   **Event Handling**: The `ComponentManager` determines which component is currently active, then calls the `handle_key_events` method on that component. This is where your logic (within `impl Component`) is executed. The component can modify its internal state (e.g., change the selected item in a list).
-    *   **Actions**: After handling an event, a component can return an `Action` (e.g., as a `String` like `"quit"` or `"save"`). This `Action` is how components communicate back to the `ComponentManager` or other components to trigger larger changes.
+4.  **Event Handling Flow**:
+    *   **Input Capture**: When a user interacts with the terminal (e.g., presses a key), the `EventHandler` (from `weavetui_core`) captures this input.
+    *   **Event Distribution**: The captured event is then passed to the `ComponentManager`.
+    *   **Component Action**: The `ComponentManager` identifies the currently active component and dispatches the event to its `handle_key_events` (or `handle_mouse_events`) method. Here, your component's logic processes the event, potentially modifying its internal state (e.g., updating a counter, changing a selected item).
+    *   **Actions & Communication**: After processing an event, a component can optionally return an `Action` (e.g., a command like `"quit"` or `"submit"`). These actions are a primary way for components to communicate with the `ComponentManager` or other parts of the application, triggering broader changes or application-level responses.
 
-5.  **Render Cycle**:
-    *   After an event is handled, the `ComponentManager` will trigger the render process to update the display.
-    *   The render engine will traverse your component tree and call the `draw()` method on each visible component.
-    *   Each component then "draws" itself to a buffer in memory.
-    *   Once all components have been drawn to the buffer, the buffer is displayed to the terminal, and you will see the changes on the screen.
+5.  **Rendering the UI**:
+    *   After events are processed, the `ComponentManager` initiates a re-render of the UI.
+    *   The rendering engine iterates through all visible components, calling their `draw()` method.
+    *   Each component draws its visual representation onto an in-memory buffer.
+    *   Once the buffer is complete, its contents are efficiently sent to the terminal, updating what the user sees on the screen.
 
-6.  **Back to Loop**: The process returns to the beginning, waiting for the next user input. This cycle repeats rapidly, giving the illusion of an interactive and responsive application.
+6.  **Continuous Interaction**: This entire cycle of event handling and rendering repeats rapidly, creating the illusion of a fluid, interactive, and responsive terminal application.
 
 ## 🧪 Running Tests
 

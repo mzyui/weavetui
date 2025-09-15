@@ -6,10 +6,10 @@
 
 ## ✨ Features
 
-*   **Automatic Trait Implementation:** Automatically implements `weavetui_core::Component` and `weavetui_core::ComponentAccessor` for your structs, handling the necessary boilerplate.
+*   **Automatic Trait Implementation:** The `#[component]` attribute automatically implements `weavetui_core::Component` and `weavetui_core::ComponentAccessor` for your structs, handling the necessary boilerplate.
 *   **Declarative Child Management:** Easily define and manage child components directly within your component's attribute, fostering a clear and hierarchical UI structure.
-*   **Default Implementations:** Provides sensible default implementations for component methods, allowing you to focus on custom logic.
-*   **Reduced Boilerplate:** Drastically cuts down on repetitive code, making component creation faster and less error-prone.
+*   **Reduced Boilerplate:** Drastically cuts down on repetitive code, making component creation faster and less error-prone, allowing you to focus on custom logic.
+*   **Integration with `weavetui_core`:** Seamlessly integrates with the core traits defined in `weavetui_core`, providing a cohesive development experience.
 
 ## 🚀 Getting Started
 
@@ -22,7 +22,9 @@ weavetui_derive = { version = "0.1.1" } # Or specify a path/git dependency for d
 
 ## 📚 Usage
 
-Apply the `#[component]` attribute to your struct definitions. The macro will automatically generate the necessary trait implementations. A practical example of its usage can be found in the `counter_app.rs` example within the main `weavetui` repository.
+Apply the `#[component]` attribute to your struct definitions. The macro will automatically generate the necessary trait implementations for `weavetui_core::Component` and `weavetui_core::ComponentAccessor`.
+
+A practical example of its usage can be found in the `counter_app.rs` example within the main `weavetui` repository.
 
 ### Basic Component
 
