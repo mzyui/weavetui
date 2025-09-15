@@ -9,7 +9,7 @@ use crate::theme::ThemeManager;
 use crate::Component;
 
 /// A struct to hold the internal state of a component, injected by the `#[component]` macro.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ComponentContext {
     /// A map of child components, keyed by their names.
     pub children: BTreeMap<String, Box<dyn Component>>,
@@ -21,4 +21,16 @@ pub struct ComponentContext {
     pub action_tx: Option<UnboundedSender<Action>>,
     /// The theme manager instance for the component.
     pub theme_manager: ThemeManager,
+}
+
+impl Default for ComponentContext {
+    fn default() -> Self {
+        Self {
+            children: BTreeMap::new(),
+            area: None,
+            active: true, // Default to true
+            action_tx: None,
+            theme_manager: ThemeManager::default(),
+        }
+    }
 }
