@@ -13,18 +13,16 @@ use downcast_rs::{impl_downcast, Downcast};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
+pub mod app;
+pub mod component_manager;
+pub mod event;
+pub mod internal;
+pub mod keyboard;
+pub mod macros;
 pub mod theme;
 pub mod tui;
-pub mod keyboard;
-pub mod event;
-pub mod macros;
-pub mod component_manager;
-pub mod app;
-pub mod internal;
 
 pub use internal::ComponentContext;
-
-
 
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{layout::Rect, Frame};
@@ -116,6 +114,12 @@ pub trait ComponentAccessor: Debug {
 
     /// Sets the active state of the component.
     fn set_active(&mut self, active: bool);
+
+    /// Sets the component as active.
+    fn active(&mut self);
+
+    /// Sets the component as inactive.
+    fn deactive(&mut self);
 
     /// Registers an action handler that can send `Action`s for processing.
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>);

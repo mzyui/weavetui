@@ -13,8 +13,6 @@ use syn::{
 };
 mod args;
 
-
-
 /// Implements the `weavetui_core::Component` and `weavetui_core::ComponentAccessor` traits
 /// for a struct, turning it into a `weavetui` component.
 ///
@@ -125,17 +123,14 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut found_ctx_field = false;
     if let Fields::Named(FieldsNamed { named, .. }) = &mut ast.fields {
         for field in named.iter() {
-            if field
-                .ident
-                .as_ref()
-                .is_some_and(|ident| ident == "_ctx")
-            {
+            if field.ident.as_ref().is_some_and(|ident| ident == "_ctx") {
                 found_ctx_field = true;
                 break;
             }
         }
         if !found_ctx_field {
-            let new_ctx_field: syn::Field = parse_quote! { pub _ctx: weavetui_core::ComponentContext };
+            let new_ctx_field: syn::Field =
+                parse_quote! { pub _ctx: weavetui_core::ComponentContext };
             named.push(new_ctx_field);
         }
     } else if let Fields::Unnamed(FieldsUnnamed {
@@ -232,7 +227,8 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             for field in named.iter() {
                 let field_name = field.ident.as_ref().unwrap();
                 if field_name == &Ident::new("_ctx", name.span()) {
-                    field_initializers.push(quote! { #field_name: weavetui_core::ComponentContext::default() });
+                    field_initializers
+                        .push(quote! { #field_name: weavetui_core::ComponentContext::default() });
                 } else {
                     field_initializers.push(quote! { #field_name: Default::default() });
                 }
@@ -260,6 +256,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                     if let Some(area) = self._ctx.area {
                         f.render_widget(
                             ratatui::widgets::Block::bordered()
+                                .border_type(ratatui::widgets::BorderType::Rounded)
                                 .title_top(ratatui::text::Line::from(format!(" {}: {} x {} ", weavetui_core::ComponentAccessor::name(self), area.height, area.width)))
                                 .title_alignment(ratatui::layout::Alignment::Center),
                             area
@@ -299,10 +296,14 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
             fn set_active(&mut self, active: bool) {
                 self._ctx.active = active;
                 (self as &mut dyn weavetui_core::Component).on_active_changed(active);
+            }
 
-                for child in self._ctx.children.values_mut() {
-                    child.set_active(active);
-                }
+            fn active(&mut self) {
+                self.set_active(true);
+            }
+
+            fn deactive(&mut self) {
+                self.set_active(false);
             }
 
             fn register_action_handler(&mut self, tx: tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>) {
