@@ -22,6 +22,7 @@ pub struct ChildEntry {
 }
 
 impl Parse for ChildEntry {
+    /// Parses the input stream to create a `ChildEntry`.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(ChildEntry {
             key: input.parse()?,

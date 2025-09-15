@@ -35,6 +35,7 @@ pub struct App {
 }
 
 impl Default for App {
+    /// Creates a new `App` instance with default settings. This includes an unbounded MPSC channel for actions, default tick and frame rates, and no initial components or keybindings.
     fn default() -> Self {
         let (action_tx, action_rx) = mpsc::unbounded_channel::<Action>();
         Self {

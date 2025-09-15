@@ -1,3 +1,5 @@
+//! This module provides utility functions for managing `Component` instances, including drawing, updating, event handling, and theme propagation across the component tree.
+
 use ratatui::{layout::Rect, Frame};
 use tokio::sync::mpsc::UnboundedSender;
 

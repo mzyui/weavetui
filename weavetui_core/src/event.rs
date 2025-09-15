@@ -1,3 +1,6 @@
+//! This module defines the `Event` and `Action` enums, which are central to the application's event-driven architecture.
+//! `Event` represents raw input from the terminal or internal application occurrences, while `Action` represents a processed command that can be dispatched and handled by components.
+
 use {
     crossterm::event::{KeyEvent, MouseEvent},
     std::fmt::{Display, Formatter, Result},
@@ -25,6 +28,7 @@ pub enum Action {
 }
 
 impl Display for Action {
+    /// Formats the `Action` into a debug string representation.
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let enum_str = write!(f, "{:?}", self);
         enum_str
@@ -71,18 +75,21 @@ pub enum ActionKind {
 }
 
 impl From<&str> for ActionKind {
+    /// Converts a string slice into an `ActionKind::Stringified` variant.
     fn from(s: &str) -> Self {
         ActionKind::Stringified(s.to_string())
     }
 }
 
 impl From<String> for ActionKind {
+    /// Converts a `String` into an `ActionKind::Stringified` variant.
     fn from(s: String) -> Self {
         ActionKind::Stringified(s)
     }
 }
 
 impl From<Action> for ActionKind {
+    /// Converts an `Action` into an `ActionKind::Full` variant.
     fn from(a: Action) -> Self {
         ActionKind::Full(a)
     }

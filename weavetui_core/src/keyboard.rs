@@ -1,3 +1,6 @@
+//! This module provides utilities for handling keyboard input, including parsing key event strings into `KeyEvent` sequences and managing keybindings for the application.
+//! It allows for flexible definition and lookup of actions based on user input.
+
 use {
     super::event::{Action, ActionKind},
     crate::kb,
@@ -79,6 +82,7 @@ impl KeyBindings {
 }
 
 impl Default for KeyBindings {
+    /// Creates a default set of keybindings, including `Ctrl-C` for quitting the application.
     fn default() -> Self {
         Self::new(kb![
             "<ctrl-c>" => Action::Quit

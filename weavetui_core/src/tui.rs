@@ -1,3 +1,6 @@
+//! This module provides the `Tui` struct, which is responsible for managing the terminal user interface.
+//! It handles initialization, event polling, rendering, and cleanup of the terminal, acting as the bridge between the application logic and the `crossterm`/`ratatui` backend.
+
 use {
     super::event::Event,
     crossterm::{

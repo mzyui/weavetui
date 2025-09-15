@@ -1,3 +1,6 @@
+//! This module defines structures and utilities for managing themes within the `weavetui` framework.
+//! It provides `Theme` to encapsulate styles and colors, and `ThemeManager` to handle multiple themes and their application to UI components.
+
 use ratatui::style::{Color, Style};
 use std::collections::HashMap;
 

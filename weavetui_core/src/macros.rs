@@ -1,3 +1,6 @@
+//! This module contains convenience macros for the `weavetui` framework, simplifying the creation of keybindings and component collections.
+//! These macros reduce boilerplate and improve readability when setting up application components and their interactions.
+
 /// Creates an array of keybindings.
 ///
 /// Each action will be converted into an `ActionKind`.
