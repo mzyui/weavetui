@@ -32,6 +32,7 @@
 *   **Reduced Boilerplate:** Leverage procedural macros (`weavetui_derive`) to automatically implement common traits, allowing you to focus on your application's unique logic rather than repetitive setup.
 *   **Robust Event Handling:** A flexible and comprehensive event system, powered by `tokio`, handles keyboard, mouse, and custom `Action`s, ensuring a responsive user experience.
 *   **Clear Architecture:** A well-defined separation of concerns between core functionalities (`weavetui_core`) and macro-based development (`weavetui_derive`) promotes clarity and extensibility.
+
 *   **Interactive & Responsive:** Designed from the ground up to deliver engaging and fast-responding user interfaces directly within the terminal, with configurable tick and frame rates.
 
 ## 🚀 Getting Started
@@ -93,19 +94,19 @@ graph TD
     end
 
     subgraph "Phase 2: Runtime"
-        F[`weavetui` Application starts (`App`)] --> G[Terminal Initialization \(`Tui`\) & `ComponentManager`];
-        G --> H{Main Event Loop (`App.run()`)};
+        F[`weavetui` Application starts App] --> G[Terminal Initialization Tui & ComponentManager];
+        G --> H{Main Event Loop App.run()};
 
         subgraph "Event & Render Cycle"
-            H --"Waiting for input/events..."--> I[User input (`KeyEvent`, `MouseEvent`, `Paste`) or internal events (`Tick`, `Render`)];
-            I --> J[`Tui` (polls `crossterm` events)];
-            J --"Emits `weavetui_core::event::Event`"--> K[`App` (main application loop)];
+            H --"Waiting for input/events..."--> I[User input KeyEvent, MouseEvent, Paste or internal events Tick, Render];
+            I --> J[`Tui` polls `crossterm` events];
+            J --"Emits `weavetui_core::event::Event`"--> K[`App` main application loop];
             K --"Dispatches `Event` to `ComponentManager`"--> L[`ComponentManager`];
             L --"Finds active component & calls `handle_key_events`, etc."--> M[Active Component];
             M --"1. Internal state is modified"--> M;
             M --"2. Returns `Action` (optional)"--> N{Action Handling};
             N --"`Action` processed by `App` or other components"--> O[State Update & Re-render Trigger];
-            O --> P[Render Engine (`Tui`)];
+            O --> P[Render Engine `Tui`];
             P --"Calls `draw()` on each visible component"--> Q[Each Component];
             Q --"Renders view to buffer"--> R[Terminal Buffer];
             R --> S[Terminal Display updated];
