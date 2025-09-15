@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | `weavetui`         | [![crates.io](https://img.shields.io/crates/v/weavetui.svg)](https://crates.io/crates/weavetui)             | [![docs.rs](https://img.shields.io/docsrs/weavetui)](https://docs.rs/weavetui)                         |
 | [`weavetui_core`](https://github.com/mzyui/weavetui/tree/main/weavetui_core)     | [![crates.io](https://img.shields.io/crates/v/weavetui_core.svg)](https://crates.io/crates/weavetui_core) | [![docs.rs](https://img.shields.io/docsrs/weavetui_core)](https://docs.rs/weavetui_core)             |
-| [`weavetui_derive`](https://github.com/mzyui/weavetui/tree/main/weavetui_derive)   | [![crates.io](https://img.shields.io/crates/v/weavetui_derive.svg)](https://crates.io/crates/weavetui_derive) | [![docs.rs](https://img.shields.io/docsrs/weavetui_derive)](https://docs.rs/weavetui_derive)         |
+| [`weavetui_derive`](https://github.com/mzyui/weavetui/tree/main/weavetui_derive)   | [![crates.io](https://img.shields.io/crates/v/weavetui_derive.svg)](https://crates.io/crates/weavetui_derive) | [![docs.rs](https://docs.rs/weavetui_derive)](https://docs.rs/weavetui_derive)         |
 
 <br>
 
@@ -32,7 +32,6 @@
 *   **Reduced Boilerplate:** Leverage procedural macros (`weavetui_derive`) to automatically implement common traits, allowing you to focus on your application's unique logic rather than repetitive setup.
 *   **Robust Event Handling:** A flexible and comprehensive event system, powered by `tokio`, handles keyboard, mouse, and custom `Action`s, ensuring a responsive user experience.
 *   **Clear Architecture:** A well-defined separation of concerns between core functionalities (`weavetui_core`) and macro-based development (`weavetui_derive`) promotes clarity and extensibility.
-
 *   **Interactive & Responsive:** Designed from the ground up to deliver engaging and fast-responding user interfaces directly within the terminal, with configurable tick and frame rates.
 
 ## 🚀 Getting Started
@@ -95,7 +94,7 @@ graph TD
 
     subgraph "Phase 2: Runtime"
         F[`weavetui` Application starts App] --> G[Terminal Initialization Tui & ComponentManager];
-        G --> H{Main Event Loop App.run()};
+        G --> H{Main Event Loop App run};
 
         subgraph "Event & Render Cycle"
             H --"Waiting for input/events..."--> I[User input KeyEvent, MouseEvent, Paste or internal events Tick, Render];
