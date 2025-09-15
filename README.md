@@ -9,7 +9,7 @@
 | **Crate**           | **Version**                                                                                             | **Docs**                                                                                              |
 | --- | --- | --- |
 | `weavetui`         | [![crates.io](https://img.shields.io/crates/v/weavetui.svg)](https://crates.io/crates/weavetui)             | [![docs.rs](https://img.shields.io/docsrs/weavetui)](https://docs.rs/weavetui)                         |
-| [`weavetui_core`](https://github.com/mzyui/weavetui/tree/main/weavetui_core)     | [![crates.io](https://img.shields.io/crates/v/weavetui_core.svg)](https://crates.io/crates/weavetui_core) | [![docs.rs](https://img.shields.io/docsrs/weavetui_core)](https://docs.rs/weavetui_core)             |
+| [`weavetui_core`](https://github.com/mzyui/weavetui/tree/main/weavetui_core)     | [![crates.io](https://img.shields.io/crates/v/weavetui_core.svg)](https://crates.io/crates/weavetui_core) | [![docs.rs](https://docs.rs/weavetui_core)](https://docs.rs/weavetui_core)             |
 | [`weavetui_derive`](https://github.com/mzyui/weavetui/tree/main/weavetui_derive)   | [![crates.io](https://img.shields.io/crates/v/weavetui_derive.svg)](https://crates.io/crates/weavetui_derive) | [![docs.rs](https://docs.rs/weavetui_derive)](https://docs.rs/weavetui_derive)         |
 
 <br>
@@ -87,8 +87,8 @@ This repository is organized as a Rust workspace, containing the following crate
 graph TD
     subgraph " Phase 1: Compile Time"
         A[Developer defines Component Struct & adds &#91;component&#93;] --> B{Rust Compiler};
-        B --> C[`weavetui_derive` Crate];
-        C --"Macro &#91;component&#93; active"--> D[Implementation of `Component` & `ComponentAccessor` traits is automatically generated];
+        B --> C[weavetui_derive Crate];
+        C --"Macro &#91;component&#93; active"--> D[Implementation of Component & ComponentAccessor traits is automatically generated];
         D --> E[Complete Component Code];
     end
 
@@ -98,15 +98,15 @@ graph TD
 
         subgraph "Event & Render Cycle"
             H --"Waiting for input/events..."--> I[User input KeyEvent, MouseEvent, Paste or internal events Tick, Render];
-            I --> J[`Tui` polls `crossterm` events];
-            J --"Emits `weavetui_core::event::Event`"--> K[`App` main application loop];
-            K --"Dispatches `Event` to `ComponentManager`"--> L[`ComponentManager`];
-            L --"Finds active component & calls `handle_key_events`, etc."--> M[Active Component];
+            I --> J[Tui polls crossterm events];
+            J --"Emits weavetui_core::event::Event"--> K[App main application loop];
+            K --"Dispatches Event to ComponentManager"--> L[ComponentManager];
+            L --"Finds active component & calls handle_key_events, etc."--> M[Active Component];
             M --"1. Internal state is modified"--> M;
-            M --"2. Returns `Action` (optional)"--> N{Action Handling};
-            N --"`Action` processed by `App` or other components"--> O[State Update & Re-render Trigger];
-            O --> P[Render Engine `Tui`];
-            P --"Calls `draw()` on each visible component"--> Q[Each Component];
+            M --"2. Returns Action (optional)"--> N{Action Handling};
+            N --"Action processed by App or other components"--> O[State Update & Re-render Trigger];
+            O --> P[Render Engine Tui];
+            P --"Calls draw() on each visible component"--> Q[Each Component];
             Q --"Renders view to buffer"--> R[Terminal Buffer];
             R --> S[Terminal Display updated];
             S --> H;
