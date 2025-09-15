@@ -4,7 +4,7 @@ use ratatui::{
     style::{Color, Stylize},
     widgets::{Block, BorderType, Paragraph},
 };
-use weavetui_core::{Component, ComponentAccessor, app::App, components, event::Action, kb};
+use weavetui_core::{Component, app::App, components, event::Action, kb};
 use weavetui_derive::component;
 
 const INCREMENT_EVENT: &str = "app:increment";
@@ -38,7 +38,8 @@ impl Component for Counter {
             .border_type(BorderType::Rounded);
 
         let text = format!(
-            "This is a tui template.\n\n\
+            "\n\n\n\n\
+            This is a tui template.\n\n\
             Press `Ctrl-C` to stop running.\n\
             Press left and right to increment and decrement the counter respectively\n\
             Press `r` to reset the counter\n\n\
@@ -67,7 +68,7 @@ impl Component for Counter {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let simple_component = Counter::default().as_active();
+    let simple_component = Counter::default();
 
     let mut app = App::default()
         .with_components(components![simple_component])
