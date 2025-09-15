@@ -116,10 +116,14 @@ pub trait ComponentAccessor: Debug {
     fn set_active(&mut self, active: bool);
 
     /// Sets the component as active.
-    fn active(&mut self);
+    fn active(&mut self) {
+        self.set_active(true);
+    }
 
     /// Sets the component as inactive.
-    fn deactive(&mut self);
+    fn deactive(&mut self) {
+        self.set_active(false);
+    }
 
     /// Registers an action handler that can send `Action`s for processing.
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>);

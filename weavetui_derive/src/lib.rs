@@ -298,14 +298,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                 (self as &mut dyn weavetui_core::Component).on_active_changed(active);
             }
 
-            fn active(&mut self) {
-                self.set_active(true);
-            }
-
-            fn deactive(&mut self) {
-                self.set_active(false);
-            }
-
             fn register_action_handler(&mut self, tx: tokio::sync::mpsc::UnboundedSender<weavetui_core::event::Action>) {
                 self._ctx.action_tx = Some(tx);
             }
