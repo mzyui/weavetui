@@ -59,29 +59,11 @@ impl Theme {
     ///
     /// # Returns
     ///
-    /// An `Option` containing a reference to the `Style` if found, otherwise `None`.
-    /// Retrieves a style by its name.
-    ///
-    /// # Arguments
-    ///
-    /// * `key` - The name of the style to retrieve.
-    ///
-    /// # Returns
-    ///
     /// The requested `Style`, or `Style::default()` if not found.
     pub fn get_style(&self, key: &str) -> Style {
         self.styles.get(key).cloned().unwrap_or_default()
     }
 
-    /// Retrieves a color by its name.
-    ///
-    /// # Arguments
-    ///
-    /// * `key` - The name of the color to retrieve.
-    ///
-    /// # Returns
-    ///
-    /// An `Option` containing a reference to the `Color` if found, otherwise `None`.
     /// Retrieves a color by its name.
     ///
     /// # Arguments
@@ -152,30 +134,12 @@ impl ThemeManager {
     /// # Returns
     ///
     /// The requested `Style`, or a default `Style` if the theme or style is not found.
-    /// Gets a style from the active theme.
-    ///
-    /// # Arguments
-    ///
-    /// * `key` - The name of the style to retrieve.
-    ///
-    /// # Returns
-    ///
-    /// The requested `Style`, or a default `Style` if the theme or style is not found.
     pub fn get_current_style(&self, key: &str) -> Style {
         self.get_active_theme()
             .map(|theme| theme.get_style(key))
             .unwrap_or_default()
     }
 
-    /// Gets a color from the active theme.
-    ///
-    /// # Arguments
-    ///
-    /// * `key` - The name of the color to retrieve.
-    ///
-    /// # Returns
-    ///
-    /// The requested `Color`, or `Color::Reset` if the theme or color is not found.
     /// Gets a color from the active theme.
     ///
     /// # Arguments
