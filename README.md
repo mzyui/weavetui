@@ -93,7 +93,7 @@ graph TD
     end
 
     subgraph "Phase 2: Runtime"
-        F[`weavetui` Application starts (`App`)] --> G[Terminal Initialization (`Tui`) & `ComponentManager`];
+        F[`weavetui` Application starts (`App`)] --> G[Terminal Initialization \(`Tui`\) & `ComponentManager`];
         G --> H{Main Event Loop (`App.run()`)};
 
         subgraph "Event & Render Cycle"
