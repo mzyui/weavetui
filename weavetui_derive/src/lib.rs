@@ -314,10 +314,7 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
 
-            fn as_active(mut self) -> Self {
-                self.set_active(true);
-                self
-            }
+            
 
             fn get_children(&mut self) -> &mut weavetui_core::Children {
                 &mut self._ctx.children

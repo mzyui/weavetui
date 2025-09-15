@@ -180,7 +180,7 @@ impl App {
     ///
     /// The modified `App` instance.
     pub fn add_theme(mut self, theme: Theme) -> Self {
-        if self.theme_manager.get_active_theme().is_none() {
+        if !self.theme_manager.has_active_theme() {
             self.theme_manager.set_active_theme(&theme.name);
         }
 

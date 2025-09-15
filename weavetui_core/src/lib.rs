@@ -26,6 +26,7 @@ pub use internal::ComponentContext;
 
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{layout::Rect, Frame};
+use ratatui::style::{Color, Style}; // Added this line
 use tokio::sync::mpsc::UnboundedSender;
 
 use event::Action;
@@ -134,11 +135,7 @@ pub trait ComponentAccessor: Debug {
     /// Sends an `Action` through the action handler bus.
     fn send_action(&self, action: Action);
 
-    /// Sets the component as active on initialization (builder-pattern).
-    #[allow(clippy::wrong_self_convention)] // This is a builder-pattern method
-    fn as_active(self) -> Self
-    where
-        Self: Sized;
+    
 
     /// Gets all child components. This is necessary if the component has children,
     /// as it will be used by other functions to have knowledge of the children.
@@ -149,6 +146,38 @@ pub trait ComponentAccessor: Debug {
 
     /// Sets the theme manager for the component.
     fn set_theme_manager(&mut self, theme_manager: ThemeManager);
+
+    /// Gets a color from the active theme.
+    ///
+    /// # Arguments
+    ///
+    /// * `color_name` - The name of the color to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// The requested `Color`, or `Color::Reset` if the theme or color is not found.
+    fn get_color(&self, color_name: &str) -> Color {
+        self.get_theme_manager()
+            .get_active_theme()
+            .map(|theme| theme.get_color(color_name))
+            .unwrap_or(Color::Reset)
+    }
+
+    /// Gets a style from the active theme.
+    ///
+    /// # Arguments
+    ///
+    /// * `style_name` - The name of the style to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// The requested `Style`, or `Style::default()` if the theme or style is not found.
+    fn get_style(&self, style_name: &str) -> Style {
+        self.get_theme_manager()
+            .get_active_theme()
+            .map(|theme| theme.get_style(style_name))
+            .unwrap_or_default()
+    }
 }
 
 impl_downcast!(Component);
