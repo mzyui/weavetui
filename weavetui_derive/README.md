@@ -1,89 +1,58 @@
 # weavetui_derive
 
-![Crates.io](https://img.shields.io/crates/v/weavetui_derive) ![Docs.rs](https://docs.rs/weavetui_derive/badge.svg)
+Procedural macro crate for the `weavetui` TUI framework. Provides the `#[component]` attribute to eliminate boilerplate when building components.
 
-`weavetui_derive` is the procedural macro companion for the `weavetui` Text User Interface (TUI) framework. It provides the powerful `#[component]` attribute macro, significantly reducing boilerplate code and streamlining the development of `weavetui` components.
+<p align="center">
+  <a href="https://crates.io/crates/weavetui_derive"><img alt="crates.io" src="https://img.shields.io/crates/v/weavetui_derive.svg"></a>
+  <a href="https://docs.rs/weavetui_derive"><img alt="docs.rs" src="https://docs.rs/weavetui_derive/badge.svg"></a>
+</p>
 
-## ✨ Features
+## Features
 
-*   **Automatic Trait Implementation:** The `#[component]` attribute automatically implements `weavetui_core::Component` and `weavetui_core::ComponentAccessor` for your structs. This includes injecting a `_ctx` field (of type `weavetui_core::ComponentContext`) to manage internal component state like children, area, active status, action sender, and theme manager.
-*   **Declarative Child Management:** Easily define and manage child components directly within your component's attribute using `children = [...]`, fostering a clear and hierarchical UI structure. The macro handles the creation and initialization of these children.
-*   **Reduced Boilerplate:** Drastically cuts down on repetitive code for trait implementations and common component setup, making component creation faster and less error-prone, allowing you to focus on custom logic.
-*   **Integration with `weavetui_core`:** Seamlessly integrates with the core traits and types defined in `weavetui_core`, providing a cohesive and powerful development experience.
+- Implements `weavetui_core::Component` and `ComponentAccessor` for your struct
+- Injects `pub _ctx: weavetui_core::ComponentContext` if missing
+- Optional default `draw` via `#[component(default)]`
+- Declarative children via `#[component(children("name" => ChildType, ...))]`
 
-## 🚀 Getting Started
-
-To use the `#[component]` macro in your `weavetui` project, add `weavetui_derive` as a dependency in your `Cargo.toml`:
+## Installation
 
 ```toml
 [dependencies]
-weavetui_derive = { version = "0.1.1" } # Or specify a path/git dependency for development
+weavetui_derive = "0.1.2"
 ```
 
-## 📚 Usage
+## Usage
 
-Apply the `#[component]` attribute to your struct definitions. The macro will automatically generate the necessary trait implementations for `weavetui_core::Component` and `weavetui_core::ComponentAccessor`.
-
-### Injected Fields
-
-When you use the `#[component]` attribute, a `pub _ctx: weavetui_core::ComponentContext` field is automatically added to your struct (if not already present). This `_ctx` field encapsulates essential component state:
-
-*   `children: BTreeMap<String, Box<dyn Component>>`: A map to hold child components, allowing for nested UI structures.
-*   `area: Option<ratatui::layout::Rect>`: Stores the rendering area assigned to the component by its parent.
-*   `active: bool`: A flag indicating whether the component is currently active and should respond to events.
-*   `action_tx: Option<UnboundedSender<Action>>`: A channel sender for dispatching actions to the application's central event loop.
-*   `theme_manager: weavetui_core::theme::ThemeManager`: Manages the theme and styles for the component and its children.
-
-### Basic Component
-
+Basic component:
 ```rust
 use weavetui_derive::component;
 
 #[component(default)]
-struct MySimpleComponent {
-    // Your component's custom fields
-}
-
-// MySimpleComponent now implements weavetui_core::Component and weavetui_core::ComponentAccessor
-// and has a `_ctx` field for internal management.
+pub struct MyComponent;
 ```
 
-### Component with Children
-
-You can declare child components directly within the `#[component]` attribute using the `children = [...]` syntax. The macro will automatically initialize these children within the `_ctx.children` map.
-
+Component with children:
 ```rust
 use weavetui_derive::component;
-use weavetui_core::Component; // This import might not be strictly necessary for the example, but good for context
 
 #[component(default)]
-struct HeaderComponent;
-
+pub struct Header;
 #[component(default)]
-struct FooterComponent;
+pub struct Footer;
 
-#[component(default)]
-struct ButtonComponent;
-
-#[component(default, children(
-    "header" => HeaderComponent,
-    "footer" => FooterComponent,
-    "button_area" => ButtonComponent,
-))]
-struct ParentComponent {
-    title: String,
-}
-
-// ParentComponent will have its `_ctx.children` field initialized with instances
-// of HeaderComponent, FooterComponent, and ButtonComponent.
+#[component(children("header" => Header, "footer" => Footer))]
+pub struct Parent { title: String }
 ```
 
-A practical example of its usage can be found in the `counter_app.rs` example within the main `weavetui` repository.
+## Notes
 
-## 🤝 Contributing
+- Prefer using `weavetui::prelude::*` in your app to access common types and the macro re-export.
+- The macro also generates a `Default` impl that initializes `_ctx` and declared children.
 
-We welcome contributions to `weavetui_derive`! Please refer to the main `weavetui` project's [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines on how to get involved, report issues, and submit pull requests.
+## Contributing
 
-## 📄 License
+Please see the top-level [CONTRIBUTING.md](../CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md).
 
-This project is licensed under the MIT License. See the [LICENSE](../../LICENSE) file for details.
+## License
+
+MIT. See [LICENSE](../LICENSE).
