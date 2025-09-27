@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&duration=2500&pause=800&color=36BCF7&center=true&vCenter=true&width=800&lines=weavetui_derive;Procedural+Macros+for+weavetui" alt="weavetui_derive banner" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=26&duration=2500&pause=800&color=36BCF7&center=true&vCenter=true&width=800&lines=Procedural+Macros+for+weavetui" alt="weavetui_derive banner" />
   <h1>weavetui_derive</h1>
   <p>Procedural macro crate • `#[component]` to eliminate boilerplate in Rust TUI components</p>
   <!-- Package Badges -->
