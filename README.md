@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=28&duration=2500&pause=800&color=36BCF7&center=true&vCenter=true&width=800&lines=weavetui;Modern%2C+Robust+%26+Modular+Rust+TUI+Framework" alt="weavetui banner" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=28&duration=2500&pause=800&color=36BCF7&center=true&vCenter=true&width=800&lines=Modern%2C+Robust+%26+Modular+Rust+TUI+Framework" alt="weavetui banner" />
   <h1>weavetui</h1>
   <p>Modern, Robust & Modular Rust TUI Framework • Built on ratatui + tokio</p>
   <!-- Core Package Badges -->
