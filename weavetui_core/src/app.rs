@@ -15,19 +15,36 @@ use crate::{
     Component, ComponentHandler,
 };
 
+/// Configuration structure for the application settings.
+#[derive(Debug, Clone)]
+pub struct AppConfig {
+    pub tick_rate: f64,
+    pub frame_rate: f64,
+    pub mouse: bool,
+    pub paste: bool,
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            tick_rate: 1.0,
+            frame_rate: 24.0,
+            mouse: false,
+            paste: false,
+        }
+    }
+}
+
 /// `App` is the main application structure that orchestrates the TUI.
 ///
 /// It manages the event loop, handles user input, dispatches actions to components,
 /// and renders the UI.
 #[derive(Debug)]
 pub struct App {
-    tick_rate: f64,
-    frame_rate: f64,
+    config: AppConfig,
     should_quit: bool,
     keybindings: KeyBindings,
     last_tick_key_events: Vec<KeyEvent>,
-    mouse: bool,
-    paste: bool,
     component_handlers: Vec<ComponentHandler>,
     theme_manager: ThemeManager,
     action_tx: mpsc::UnboundedSender<Action>,
@@ -39,15 +56,12 @@ impl Default for App {
     fn default() -> Self {
         let (action_tx, action_rx) = mpsc::unbounded_channel::<Action>();
         Self {
+            config: AppConfig::default(),
             last_tick_key_events: Vec::default(),
             keybindings: KeyBindings::default(),
             component_handlers: Vec::new(),
             theme_manager: ThemeManager::default(),
-            frame_rate: 24.into(),
-            tick_rate: 1.into(),
             should_quit: false,
-            mouse: false,
-            paste: false,
             action_tx,
             action_rx,
         }
@@ -120,7 +134,7 @@ impl App {
     ///
     /// The modified `App` instance.
     pub fn with_tick_rate(mut self, tick_rate: impl Into<f64>) -> Self {
-        self.tick_rate = tick_rate.into();
+        self.config.tick_rate = tick_rate.into();
         self
     }
 
@@ -136,7 +150,7 @@ impl App {
     ///
     /// The modified `App` instance.
     pub fn with_frame_rate(mut self, frame_rate: impl Into<f64>) -> Self {
-        self.frame_rate = frame_rate.into();
+        self.config.frame_rate = frame_rate.into();
         self
     }
 
@@ -150,7 +164,7 @@ impl App {
     ///
     /// The modified `App` instance.
     pub fn with_mouse(mut self, mouse: bool) -> Self {
-        self.mouse = mouse;
+        self.config.mouse = mouse;
         self
     }
 
@@ -164,7 +178,7 @@ impl App {
     ///
     /// The modified `App` instance.
     pub fn with_paste(mut self, paste: bool) -> Self {
-        self.paste = paste;
+        self.config.paste = paste;
         self
     }
 
@@ -214,6 +228,113 @@ impl App {
         self.action_rx.try_recv()
     }
 
+    /// Handles keyboard events and converts them to actions.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The key event to handle.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
+    fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
+        if let Some(action) = self.keybindings.get(&[key]) {
+            self.send(action.clone())?;
+        } else {
+            self.last_tick_key_events.push(key);
+            if let Some(action) = self.keybindings.get(&self.last_tick_key_events) {
+                self.send(action.clone())?;
+            }
+        }
+
+        if let KeyCode::Char(c) = key.code {
+            if c.is_alphanumeric() {
+                self.send(Action::Key(c.to_string()))?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Processes actions received from the action channel.
+    ///
+    /// # Arguments
+    ///
+    /// * `action` - The action to process.
+    /// * `tui` - The TUI instance for rendering.
+    /// * `initialize` - A mutable reference to the initialization flag.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
+    fn process_action(&mut self, action: Action, tui: &mut Tui, initialize: &mut bool) -> Result<()> {
+        match action {
+            Action::Quit => self.should_quit = true,
+            Action::Render => {
+                tui.draw(|f| {
+                    for handler in self.component_handlers.iter_mut() {
+                        let area = f.area();
+                        if !*initialize {
+                            handler.handle_init(area);
+                            *initialize = true;
+                        }
+                        handler.c.set_area(area);
+                        handler.handle_draw(f);
+                    }
+                })?;
+            }
+            Action::Tick => {
+                self.last_tick_key_events.drain(..);
+            }
+            Action::AppAction(ref m) => {
+                for handler in self.component_handlers.iter_mut() {
+                    if handler.c.is_active() {
+                        handler.handle_message(m.as_str());
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        for handler in self.component_handlers.iter_mut() {
+            handler.handle_update(&action);
+        }
+
+        Ok(())
+    }
+
+    /// Initializes the TUI and sets up component handlers.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the initialized TUI or an error.
+    fn initialize_tui(&mut self) -> Result<Tui> {
+        let mut tui = Tui::new()?
+            .tick_rate(self.config.tick_rate)
+            .frame_rate(self.config.frame_rate)
+            .mouse(self.config.mouse)
+            .paste(self.config.paste);
+
+        tui.enter()?;
+
+        for handler in self.component_handlers.iter_mut() {
+            handler.receive_action_handler(self.action_tx.clone());
+            handler.handle_theme(self.theme_manager.clone());
+            handler.handle_custom_keybindings(&mut self.keybindings);
+        }
+
+        if !self
+            .keybindings
+            .0
+            .iter()
+            .any(|(_, action)| *action == Action::Quit)
+        {
+            anyhow::bail!("Action::Quit is not bound to any key. Consider binding it for graceful exit (e.g., <ctrl-c>).");
+        }
+
+        Ok(tui)
+    }
+
     /// Runs the main application loop.
     ///
     /// This asynchronous function initializes the TUI, sets up event handling, and continuously
@@ -224,117 +345,67 @@ impl App {
     ///
     /// A `Result` indicating the success or failure of the application execution.
     pub async fn run(&mut self) -> Result<()> {
-        let mut tui = Tui::new()?
-            .tick_rate(self.tick_rate)
-            .frame_rate(self.frame_rate)
-            .mouse(self.mouse)
-            .paste(self.paste);
-
-        tui.enter()?;
-
-        for handler in self.component_handlers.iter_mut() {
-            handler.receive_action_handler(self.action_tx.clone());
-            handler.handle_theme(self.theme_manager.clone());
-            handler.handle_custom_keybindings(&mut self.keybindings);
-        }
-
-        // Check for Action::Quit
-        if !self
-            .keybindings
-            .0
-            .iter()
-            .any(|(_, action)| *action == Action::Quit)
-        {
-            anyhow::bail!("Action::Quit is not bound to any key. Consider binding it for graceful exit (e.g., <ctrl-c>).");
-        }
+        let mut tui = self.initialize_tui()?;
 
         let mut initialize = false;
         loop {
             if let Some(e) = tui.next().await {
-                match e {
-                    Event::Resize(x, y) => self.send(Action::Resize(x, y))?,
-                    Event::Render => self.send(Action::Render)?,
-                    Event::Tick => self.send(Action::Tick)?,
-                    Event::Quit => self.send(Action::Quit)?,
-                    Event::Key(key) => {
-                        if let Some(action) = self.keybindings.get(&[key]) {
-                            self.send(action.clone())?;
-                        } else {
-                            // If the key was not handled as a single key action,
-                            // then consider it for multi-key combinations.
-                            self.last_tick_key_events.push(key);
-
-                            // Check for multi-key combinations
-                            if let Some(action) = self.keybindings.get(&self.last_tick_key_events) {
-                                self.send(action.clone())?;
-                            }
-                        }
-
-                        // send the key event as simple key event too (not as action) if it's a
-                        // single alphanumeric char key
-                        if let KeyCode::Char(c) = key.code {
-                            if c.is_alphanumeric() {
-                                self.send(Action::Key(c.to_string()))?;
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-                let mut actions = Vec::new();
-
-                for handler in self.component_handlers.iter_mut() {
-                    let component_actions = handler.handle_events(&Some(e.clone()));
-                    actions.extend(component_actions);
-                }
-
-                for action in actions {
-                    self.send(action)?;
+                if let Err(err) = self.handle_event(e.clone()) {
+                    eprintln!("Error handling event: {}", err);
+                    continue;
                 }
             }
 
             while let Ok(action) = self.try_recv() {
-                match action {
-                    Action::Quit => self.should_quit = true,
-                    Action::Render => {
-                        tui.draw(|f| {
-                            for handler in self.component_handlers.iter_mut() {
-                                let area = f.area();
-                                if !initialize {
-                                    handler.handle_init(area);
-                                    initialize = true;
-                                }
-                                handler.c.set_area(area);
-                                handler.handle_draw(f);
-                            }
-                        })?;
-                    }
-                    Action::Tick => {
-                        self.last_tick_key_events.drain(..);
-                    }
-
-                    Action::AppAction(ref m) => {
-                        for handler in self.component_handlers.iter_mut() {
-                            if handler.c.is_active() {
-                                handler.handle_message(m.as_str());
-                            }
-                        }
-                    }
-
-                    _ => {}
-                }
-
-                for handler in self.component_handlers.iter_mut() {
-                    handler.handle_update(&action);
+                if let Err(err) = self.process_action(action, &mut tui, &mut initialize) {
+                    eprintln!("Error processing action: {}", err);
+                    continue;
                 }
             }
 
             if self.should_quit {
-                tui.stop()?;
+                if let Err(err) = tui.stop() {
+                    eprintln!("Error stopping TUI: {}", err);
+                }
                 break;
             }
         }
 
-        tui.exit()?;
+        if let Err(err) = tui.exit() {
+            eprintln!("Error exiting TUI: {}", err);
+        }
+
+        Ok(())
+    }
+
+    /// Handles a single event and dispatches appropriate actions.
+    ///
+    /// # Arguments
+    ///
+    /// * `event` - The event to handle.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
+    fn handle_event(&mut self, event: Event) -> Result<()> {
+        match event {
+            Event::Resize(x, y) => self.send(Action::Resize(x, y))?,
+            Event::Render => self.send(Action::Render)?,
+            Event::Tick => self.send(Action::Tick)?,
+            Event::Quit => self.send(Action::Quit)?,
+            Event::Key(key) => self.handle_key_event(key)?,
+            _ => {}
+        }
+
+        let mut actions = Vec::new();
+        for handler in self.component_handlers.iter_mut() {
+            let component_actions = handler.handle_events(&Some(event.clone()));
+            actions.extend(component_actions);
+        }
+
+        for action in actions {
+            self.send(action)?;
+        }
 
         Ok(())
     }
