@@ -1,13 +1,4 @@
 //! Core library for the `weavetui` TUI framework.
-//!
-//! This crate defines the fundamental traits and types for building interactive
-//! Text User Interface (TUI) components, including `Component` for rendering
-//! and event handling, and `ComponentAccessor` for managing component properties
-//! and children.
-//!
-//! It provides the building blocks for the `weavetui` ecosystem, designed to be
-//! used in conjunction with the `weavetui_derive` crate for declarative component
-//! creation.
 
 use downcast_rs::{impl_downcast, Downcast};
 use std::collections::BTreeMap;
@@ -26,72 +17,62 @@ pub use internal::ComponentContext;
 
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{layout::Rect, Frame};
-use ratatui::style::{Color, Style}; // Added this line
+use ratatui::style::{Color, Style};
 use tokio::sync::mpsc::UnboundedSender;
 
 use event::Action;
 
 use crate::{event::Event, keyboard::KeyBindings, theme::ThemeManager};
 
-/// A type alias for a `BTreeMap` that stores child components.
-///
-/// The keys are `String` representations of the child component names,
-/// and the values are `Box<dyn Component>` trait objects, allowing for
-/// polymorphic storage of different component types.
 pub type Children = BTreeMap<String, Box<dyn Component>>;
 
-/// A handler for managing the lifecycle of a component.
-///
-/// `ComponentHandler` wraps a `Box<dyn Component>` and provides methods
-/// to initialize, handle events, update, and draw the component.
 #[derive(Debug)]
 pub struct ComponentHandler {
     c: Box<dyn Component>,
 }
 
 impl ComponentHandler {
-    /// Creates a new `ComponentHandler` for the given component.
+    /// Wrap a component so it can be managed by the app
     pub fn for_(component: Box<dyn Component>) -> Self {
         Self { c: component }
     }
 
-    /// Handles the initialization of the component.
+    /// Set up the component in its assigned area
     pub(crate) fn handle_init(&mut self, area: Rect) {
         component_manager::init(self.c.as_mut(), area);
     }
 
-    /// Receives and sets up the action handler for the component.
+    /// Give the component a way to send actions back to the app
     pub(crate) fn receive_action_handler(&mut self, tx: UnboundedSender<Action>) {
         component_manager::receive_action_handler(self.c.as_mut(), tx);
     }
 
-    /// Handles input events and returns a list of resulting actions.
+    /// Let the component handle user input and return any actions
     pub(crate) fn handle_events(&mut self, event: &Option<Event>) -> Vec<Action> {
         component_manager::handle_event_for(self.c.as_mut(), event)
     }
 
-    /// Updates the component's state based on a received action.
+    /// Tell the component about state changes
     pub(crate) fn handle_update(&mut self, action: &Action) {
         component_manager::update(self.c.as_mut(), action);
     }
 
-    /// Handles a string message received by the component.
+    /// Pass custom messages to the component
     pub(crate) fn handle_message(&mut self, message: &str) {
         component_manager::handle_message(self.c.as_mut(), message);
     }
 
-    /// Handles the drawing process of the component to the frame.
+    /// Draw the component to the screen
     pub(crate) fn handle_draw(&mut self, f: &mut Frame<'_>) {
         component_manager::handle_draw(self.c.as_mut(), f);
     }
 
-    /// Collects and registers custom keybindings from the component and its children.
-    /// This function is called by the application to allow components to register their own keybindings.
+    /// Let the component register its own keyboard shortcuts
     pub(crate) fn handle_custom_keybindings(&mut self, kb: &mut KeyBindings) {
         component_manager::custom_keybindings(self.c.as_mut(), kb);
     }
 
-    /// Handles the theme for the component and its children.
+    /// Apply a theme to the component
     pub(crate) fn handle_theme(&mut self, th: ThemeManager) {
         component_manager::handle_theme(self.c.as_mut(), &th);
     }

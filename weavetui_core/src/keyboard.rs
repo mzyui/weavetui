@@ -1,5 +1,4 @@
-//! This module provides utilities for handling keyboard input, including parsing key event strings into `KeyEvent` sequences and managing keybindings for the application.
-//! It allows for flexible definition and lookup of actions based on user input.
+//! Keyboard input handling and keybindings.
 
 use {
     super::event::{Action, ActionKind},
@@ -8,27 +7,11 @@ use {
     std::{collections::HashMap, str::FromStr},
 };
 
-/// A struct that holds key bindings.
-///
-/// The key bindings are stored in a `HashMap` where the key is a vector of
-/// [`crossterm::event::KeyEvent`] and the value is an [`Action`].
-///
-/// This is typically constructed automatically by the `kb!` macro.
-/// Key sequences are parsed from strings with a special syntax.
-/// See [`parse_key_sequence`] for more information on the syntax.
 #[derive(Clone, Debug)]
 pub struct KeyBindings(pub HashMap<Vec<KeyEvent>, Action>);
 
 impl KeyBindings {
-    /// Creates a new `KeyBindings` instance from a raw array of key strings and actions.
-    ///
-    /// This method parses the key strings into `KeyEvent` sequences and maps them to the
-    /// provided actions. It also ensures that a `Quit` action is bound to some key
-    /// combination to prevent the application from being un-closeable.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `Action::Quit` is not bound to any key.
+    /// Create new keybindings from an array of key-action pairs
     pub fn new<const N: usize>(raw: [(&str, impl Into<ActionKind>); N]) -> Self {
         let mut keybindings = HashMap::new();
         for (key_str, cmd) in raw.into_iter() {
@@ -55,34 +38,19 @@ impl KeyBindings {
         KeyBindings(keybindings)
     }
 
-    /// Retrieves the action associated with a given sequence of key events.
-    ///
-    /// # Arguments
-    ///
-    /// * `key_events` - A slice of `KeyEvent`s to look up.
-    ///
-    /// # Returns
-    ///
-    /// An `Option<&Action>` which is `Some` if a binding is found, and `None` otherwise.
+    /// Get the action for a key sequence
     pub fn get(&self, key_events: &[KeyEvent]) -> Option<&Action> {
         self.0.get(key_events)
     }
 
-    /// Extends the current key bindings with another set of key bindings.
-    ///
-    /// If a key sequence already exists in the current bindings, it will be overwritten
-    /// by the new binding.
-    ///
-    /// # Arguments
-    ///
-    /// * `other` - The `KeyBindings` to extend with.
+    /// Merge another set of keybindings into this one
     pub fn extend(&mut self, other: KeyBindings) {
         self.0.extend(other.0);
     }
 }
 
 impl Default for KeyBindings {
-    /// Creates a default set of keybindings, including `Ctrl-C` for quitting the application.
+    /// Default keybindings with Ctrl-C to quit
     fn default() -> Self {
         Self::new(kb![
             "<ctrl-c>" => Action::Quit
@@ -179,10 +147,7 @@ fn parse_key_code_with_modifiers(
     Ok(KeyEvent::new(c, modifiers))
 }
 
-/// Converts a `KeyEvent` to its string representation.
-///
-/// The string representation is compatible with the format used by [`parse_key_sequence`].
-/// For example, a `Ctrl-C` key event would be converted to the string `"<ctrl-c>"`.
+/// Convert a key event to its string format
 pub fn key_event_to_string(key_event: &KeyEvent) -> String {
     let char;
     let key_code = match key_event.code {
@@ -256,21 +221,7 @@ pub fn key_event_to_string(key_event: &KeyEvent) -> String {
     key
 }
 
-/// Parses a string representation of a key sequence into a vector of `KeyEvent`s.
-///
-/// The key sequence string can represent single keys or multi-key combinations.
-///
-/// ## Syntax
-///
-/// -   **Modifiers:** `ctrl-`, `alt-`, `shift-`
-/// -   **Keys:** Standard alphanumeric characters, or special keys like `esc`, `enter`, `left`, `f1`, etc.
-/// -   **Sequences:** Multiple keys can be chained together with `><`.
-///
-/// ## Examples
-///
-/// -   `"<ctrl-c>"`
-/// -   `"<alt-x><alt-y>"`
-/// -   `"a"`
+/// Parse a key sequence string like "<ctrl-c>" or "abc" into key events
 pub fn parse_key_sequence(raw: &str) -> Result<Vec<KeyEvent>, std::io::Error> {
     if raw.chars().filter(|c| *c == '>').count() != raw.chars().filter(|c| *c == '<').count() {
         return Err(std::io::Error::new(

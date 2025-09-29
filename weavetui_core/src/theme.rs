@@ -1,26 +1,17 @@
-//! This module defines structures and utilities for managing themes within the `weavetui` framework.
-//! It provides `Theme` to encapsulate styles and colors, and `ThemeManager` to handle multiple themes and their application to UI components.
+//! Theme management for the `weavetui` framework.
 
 use ratatui::style::{Color, Style};
 use std::collections::HashMap;
 
-/// Represents a collection of styles and colors that can be applied to the UI.
 #[derive(Debug, Default, Clone)]
 pub struct Theme {
-    /// The name of the theme.
     pub name: String,
-    /// A map of style names to `ratatui::style::Style`.
     pub styles: HashMap<String, Style>,
-    /// A map of color names to `ratatui::style::Color`.
     pub colors: HashMap<String, Color>,
 }
 
 impl Theme {
-    /// Creates a new, empty `Theme` with the given name.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name for the new theme.
+    /// Create a new theme with a name
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
@@ -29,56 +20,29 @@ impl Theme {
         }
     }
 
-    /// Adds a new style to the theme.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name to associate with the style.
-    /// * `style` - The `Style` to add.
+    /// Add a style to this theme (chainable)
     pub fn add_style(mut self, name: &str, style: Style) -> Self {
         self.styles.insert(name.to_string(), style);
         self
     }
 
-    /// Adds a new color to the theme.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name to associate with the color.
-    /// * `color` - The `Color` to add.
+    /// Add a color to this theme (chainable)
     pub fn add_color(mut self, name: &str, color: Color) -> Self {
         self.colors.insert(name.to_string(), color);
         self
     }
 
-    /// Retrieves a style by its name.
-    ///
-    /// # Arguments
-    ///
-    /// * `key` - The name of the style to retrieve.
-    ///
-    /// # Returns
-    ///
-    /// The requested `Style`, or `Style::default()` if not found.
+    /// Get a style by name (returns default if not found)
     pub fn get_style(&self, key: &str) -> Style {
         self.styles.get(key).cloned().unwrap_or_default()
     }
 
-    /// Retrieves a color by its name.
-    ///
-    /// # Arguments
-    ///
-    /// * `key` - The name of the color to retrieve.
-    ///
-    /// # Returns
-    ///
-    /// The requested `Color`, or `Color::Reset` if not found.
+    /// Get a color by name (returns Reset if not found)
     pub fn get_color(&self, key: &str) -> Color {
         self.colors.get(key).cloned().unwrap_or(Color::Reset)
     }
 }
 
-/// Manages a collection of themes and the currently active theme.
 #[derive(Debug, Default, Clone)]
 pub struct ThemeManager {
     themes: HashMap<String, Theme>,
@@ -86,27 +50,17 @@ pub struct ThemeManager {
 }
 
 impl ThemeManager {
-    /// Creates a new, empty `ThemeManager`.
+    /// Creates a new, empty theme manager
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Adds a theme to the manager.
-    ///
-    /// # Arguments
-    ///
-    /// * `theme` - The `Theme` to add.
+    /// Add a theme to the manager
     pub fn add_theme(&mut self, theme: Theme) {
         self.themes.insert(theme.name.clone(), theme);
     }
 
-    /// Sets the active theme by name.
-    ///
-    /// If the theme name is not found, a warning is printed to stderr.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name of the theme to set as active.
+    /// Set which theme is currently active
     pub fn set_active_theme(&mut self, name: &str) {
         if !self.themes.contains_key(name) {
             eprintln!("Warning: Theme '{}' not found.", name);
@@ -114,48 +68,28 @@ impl ThemeManager {
         self.active_theme_name = Some(name.to_string());
     }
 
-    /// Retrieves the currently active theme.
-    ///
-    /// # Returns
-    ///
-    /// An `Option` containing a reference to the active `Theme` if one is set and found, otherwise `None`.
+    /// Get the currently active theme
     pub fn get_active_theme(&self) -> Option<&Theme> {
         self.active_theme_name
             .as_ref()
             .and_then(|name| self.themes.get(name))
     }
 
-    /// Gets a style from the active theme.
-    ///
-    /// # Arguments
-    ///
-    /// * `key` - The name of the style to retrieve.
-    ///
-    /// # Returns
-    ///
-    /// The requested `Style`, or a default `Style` if the theme or style is not found.
+    /// Get a style from the current theme
     pub fn get_current_style(&self, key: &str) -> Style {
         self.get_active_theme()
             .map(|theme| theme.get_style(key))
             .unwrap_or_default()
     }
 
-    /// Gets a color from the active theme.
-    ///
-    /// # Arguments
-    ///
-    /// * `key` - The name of the color to retrieve.
-    ///
-    /// # Returns
-    ///
-    /// The requested `Color`, or `Color::Reset` if the theme or color is not found.
+    /// Get a color from the current theme
     pub fn get_current_color(&self, key: &str) -> Color {
         self.get_active_theme()
             .map(|theme| theme.get_color(key))
             .unwrap_or(Color::Reset)
     }
 
-    /// Checks if an active theme is currently set.
+    /// Check if there's an active theme set
     pub fn has_active_theme(&self) -> bool {
         self.active_theme_name.is_some()
     }

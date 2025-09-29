@@ -1,9 +1,4 @@
 //! Procedural macro for the `weavetui` TUI framework.
-//!
-//! This crate provides the `#[component]` attribute macro, which automatically implements
-//! the `weavetui_core::Component` and `weavetui_core::ComponentAccessor` traits for structs.
-//! It simplifies the creation of UI components by handling boilerplate code related to
-//! component lifecycle, child management, and action dispatching.
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -13,65 +8,6 @@ use syn::{
 };
 mod args;
 
-/// Implements the `weavetui_core::Component` and `weavetui_core::ComponentAccessor` traits
-/// for a struct, turning it into a `weavetui` component.
-///
-/// This macro simplifies component creation by:
-/// - Automatically injecting necessary fields: `children`, `_area`, `_active`, `_action_tx`, and `_theme_manager`.
-/// - Generating a `Default` implementation that initializes children.
-/// - Providing default implementations for the `ComponentAccessor` trait.
-///
-/// # Attributes
-///
-/// - `#[component(children = [child_name => ChildType, ...])]`: Defines child components.
-///   The macro will add a `children` field of type `BTreeMap<String, Box<dyn Component>>`
-///   and initialize it with the specified children in the `Default` implementation.
-///
-///   - `child_name`: A string literal representing the key for the child.
-///   - `ChildType`: The type of the child component, which must implement `Default`.
-///
-/// - `#[component(default)]`: Generates a default `draw` method implementation for the
-///   `Component` trait. This is useful for placeholder components or for quickly
-///   visualizing the component's area. The default `draw` method renders a bordered
-///   block with the component's name and dimensions.
-///
-/// # Injected Fields
-///
-/// When you use the `#[component]` attribute, the following fields are automatically added to your struct if they are not already present:
-///
-/// - `pub children: BTreeMap<String, Box<dyn Component>>`: A map to hold child components, allowing for nested UI structures.
-/// - `_area: Option<ratatui::layout::Rect>`: Stores the rendering area assigned to the component by its parent.
-/// - `_active: bool`: A flag indicating whether the component is currently active and should respond to events.
-/// - `_action_tx: Option<UnboundedSender<Action>>`: A channel sender for dispatching actions to the application's central event loop.
-/// - `_theme_manager: weavetui_core::theme::ThemeManager`: Manages the theme and styles for the component and its children.
-///
-/// # Example
-///
-/// ```rust,ignore
-/// use weavetui::prelude::*; // Includes necessary traits and macros
-/// use ratatui::prelude::*;
-///
-/// #[component(default)]
-/// pub struct Child;
-///
-/// #[component(children = [ "child" => Child ])]
-/// #[derive(Default)]
-/// pub struct MyComponent {
-///     pub counter: i32,
-/// }
-///
-/// impl Component for MyComponent {
-///     fn draw(&mut self, f: &mut Frame, area: Rect) {
-///         // Custom draw logic here
-///     }
-/// }
-///
-/// fn main() {
-///     let my_component = MyComponent::default();
-///     assert_eq!(my_component.children.len(), 1);
-///     assert!(my_component.children.contains_key("child"));
-/// }
-/// ```
 #[proc_macro_attribute]
 pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut ast = parse_macro_input!(item as ItemStruct);
@@ -84,8 +20,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut has_default_derive_initial = false;
     let mut has_debug_derive_initial = false;
 
-    // Parse the attributes provided to the `#[component]` macro.
-    // This block handles attributes like `children(...)` and `default`.
     if !attr.is_empty() {
         let input_tokens = proc_macro2::TokenStream::from(attr);
         syn::parse::Parser::parse2(
@@ -164,7 +98,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
-    // Remove any existing `derive(Default)` and `derive(Debug)` attributes from the struct.
     ast.attrs.retain(|attr| {
         if attr.path().is_ident("derive") {
             let mut keep = true;
@@ -181,12 +114,10 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     });
 
-    // Add `derive(Debug)` back to the struct if it wasn't already present.
     if !has_debug_derive_initial {
         ast.attrs.push(parse_quote! { #[derive(Debug)] });
     }
 
-    // Generate the `Default` implementation for the struct.
     let default_impl = if let Some(entries) = children_entries {
         let children_inits = entries.iter().map(|entry| {
             let key = &entry.key;
@@ -248,7 +179,6 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    // Generate the `Component` trait implementation.
     let component_impl = if default_component_impl {
         quote! {
             impl weavetui_core::Component for #name {
@@ -270,9 +200,8 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! {}
     };
 
-    // Generate the `ComponentAccessor` trait implementation.
     let expanded = quote! {
-        #ast // The modified struct definition
+        #ast
 
         #component_impl
 
