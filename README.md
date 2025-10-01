@@ -61,6 +61,8 @@ A modern, robust, and modular Text User Interface (TUI) framework for Rust, buil
 - **Configurable Rates**: Customizable tick rates and frame rates for optimal performance
 - **Error Handling**: Built-in error handling with `anyhow` integration
 - **Terminal Management**: Abstracted terminal I/O with automatic setup and cleanup
+- **Performance Metrics**: Optional monitoring (events/actions processed, FPS) via `App::with_performance_monitoring(true)`
+- **Event/Action Batching**: Efficient processing with configurable batch sizes
 
 ## Architecture Overview
 
@@ -80,7 +82,11 @@ weavetui/
 ├── weavetui_derive/    # Procedural macros
 │   └── src/lib.rs      # #[component] macro implementation
 └── examples/           # Example applications
-    └── counter_app.rs  # Interactive counter demo
+    ├── counter_app.rs
+    ├── on_off_redux.rs
+    ├── on_off_redux_children.rs
+    ├── on_off_children.rs
+    └── store_in_children.rs
 ```
 
 ### Core Components
@@ -92,7 +98,7 @@ weavetui/
 - **`ComponentContext`**: Injected context containing children, area, theme, and action handlers
 
 #### 🚀 **Runtime System**
-- **`App`**: Main application orchestrator managing event loop and component coordination
+- **`App`**: Main application orchestrator managing event loop and component coordination with batched events/actions
 - **`Event` enum**: Input events (Key, Mouse, Tick, Frame, Paste, Resize, etc.)
 - **`Action` enum**: Application commands (Quit, Render, AppAction, Key, etc.)
 - **`Tui`**: Terminal abstraction layer handling crossterm and ratatui integration
@@ -121,8 +127,6 @@ ratatui = "0.29.0"
 ```
 
 ### Simple Application
-
-Create a basic component and run it:
 
 ```rust
 use weavetui::prelude::*;
@@ -185,12 +189,10 @@ impl Component for MainApp {
             Constraint::Length(3),  // Footer
         ]).split(area);
 
-        // Draw children
         if let Some(header) = self.child_mut("header") {
             header.set_area(chunks[0]);
             header.draw(f, chunks[0]);
         }
-
         if let Some(footer) = self.child_mut("footer") {
             footer.set_area(chunks[2]);
             footer.draw(f, chunks[2]);
@@ -199,26 +201,48 @@ impl Component for MainApp {
 }
 ```
 
-#### Custom Themes
-```rust
-let dark_theme = Theme::new("dark")
-    .add_color("primary", Color::Cyan)
-    .add_color("secondary", Color::Gray)
-    .add_style("title", Style::default().fg(Color::Cyan).bold());
+#### Redux Store Injection into Children
+Two common patterns to give children access to `dispatch()` and `store()`:
 
-let mut app = App::default()
-    .add_theme(dark_theme)
-    .with_components(components![MyComponent::default()]);
+- Child as Redux component with its own store:
+```rust
+#[derive(Clone, Debug, Default, PartialEq)]
+struct ToggleState { on: bool }
+impl AppState for ToggleState {}
+#[derive(Clone, Debug)] enum ToggleAction { Toggle }
+fn reducer(s:&ToggleState,a:&ToggleAction)->ToggleState{ match a { ToggleAction::Toggle=>ToggleState{on:!s.on} } }
+
+#[component(state=ToggleState, action=ToggleAction, reducer=reducer)]
+struct ChildToggle;
+
+impl Component for ChildToggle {
+    fn on_event(&mut self, msg:&str) { if msg=="toggle" { self.dispatch(ToggleAction::Toggle); } }
+}
+```
+
+- Parent injects a store into child declared via `children(...)`:
+```rust
+#[component(children("child" => ChildToggle))]
+struct Parent;
+
+impl Component for Parent {
+    fn init(&mut self, _area: Rect) {
+        let store = weavetui_core::redux::Store::new(ToggleState::default(), reducer);
+        if let Some(child) = self.get_children().get_mut("child") {
+            *child = Box::new(ChildToggle::new(store));
+        }
+    }
+}
 ```
 
 #### Advanced Keybindings
 ```rust
 let keybindings = kb![
     "<ctrl-c>" => Action::Quit,
-    "<ctrl-x><ctrl-s>" => "save",           // Multi-key sequence
-    "<alt-enter>" => "fullscreen",          // Modifier combinations
-    "<f1>" => "help",                       // Function keys
-    "q" => Action::Quit,                    // Simple keys
+    "<ctrl-x><ctrl-s>" => "save",
+    "<alt-enter>" => "fullscreen",
+    "<f1>" => "help",
+    "q" => Action::Quit,
 ];
 ```
 
@@ -233,169 +257,41 @@ cargo build --release
 # Run tests across all crates
 cargo test --verbose
 
-# Run the example application
+# Run examples
 cargo run --example counter_app
+cargo run --example on_off_redux
+cargo run --example on_off_redux_children
+cargo run --example on_off_children
+cargo run --example store_in_children
 
 # Build documentation
 cargo doc --open
 ```
 
-### Example Application
-
-The included counter example demonstrates core concepts:
-
-```bash
-cargo run --example counter_app
-```
-
-**Keybindings:**
-- `<ctrl-c>` → quit application
-- `<right>` / `<left>` → increment / decrement counter
-- `r` → reset counter to zero
+### Termux (Android) Notes
+- Ensure Rust toolchain is installed via `rustup` in Termux.
+- Terminal should support ANSI escape codes; crossterm works in Termux.
+- If `cargo doc --open` fails, run `cargo doc` and open docs from `target/doc` manually.
 
 ## Component Development Guide
 
-### Basic Component Pattern
-
-1. **Define your struct** with `#[component]` or implement traits manually
-2. **Implement `Component::draw()`** for rendering logic
-3. **Override event handlers** (`handle_key_events`, `on_event`, etc.) as needed
-4. **Use `_ctx: ComponentContext`** for accessing framework services
-5. **Register with App** and define keybindings
-
-### Component Communication
-
-Components communicate through the action system:
-
-```rust
-impl Component for MyComponent {
-    fn on_event(&mut self, message: &str) {
-        match message {
-            "custom_action" => {
-                // Handle the action
-                self.send("response_action"); // Send response
-            }
-            _ => {}
-        }
-    }
-
-    fn handle_key_events(&mut self, key: KeyEvent) -> Option<Action> {
-        match key.code {
-            KeyCode::Enter => Some(Action::AppAction("submit".to_string())),
-            _ => None
-        }
-    }
-}
-```
-
-### Child Component Management
-
-Access and modify child components using downcasting:
-
-```rust
-if let Some(child) = self.child_mut("my_child") {
-    if let Some(specific_child) = child.downcast_mut::<MyChildType>() {
-        specific_child.update_data(new_data);
-    }
-}
-```
-
-### Theme Integration
-
-Components can access theme colors and styles:
-
-```rust
-impl Component for ThemedComponent {
-    fn draw(&mut self, f: &mut Frame<'_>, area: Rect) {
-        let primary_color = self.get_color("primary");
-        let title_style = self.get_style("title");
-
-        let block = Block::bordered()
-            .border_style(Style::default().fg(primary_color))
-            .title("Themed Component")
-            .title_style(title_style);
-
-        f.render_widget(block, area);
-    }
-}
-```
+- Prefer `weavetui::prelude::*` for imports.
+- Always bind `Action::Quit` (e.g., `<ctrl-c>`) to ensure graceful exit.
+- Use theming via `Theme`/`ThemeManager`; access with `get_color()` and `get_style()` from components.
+- For child component access, downcast if you need concrete types.
 
 ## API Reference
 
-### Core Traits
-
-- **`Component`**: Main component interface with lifecycle methods
-- **`ComponentAccessor`**: Component property management (name, area, active state)
-
-### Key Types
-
-- **`App`**: Main application orchestrator
-- **`Action`**: Application commands and events
-- **`Event`**: Raw input events from terminal
-- **`KeyBindings`**: Keybinding management
-- **`Theme`** / **`ThemeManager`**: Styling and theming
-
-### Macros
-
-- **`#[component]`**: Automatic trait implementation and context injection
-- **`kb!`**: Declarative keybinding creation
-- **`components!`**: Component collection creation
-
-## Performance & Compatibility
-
-### System Requirements
-- **Rust**: 2024 edition (specified in `Cargo.toml`)
-- **Platform**: Cross-platform (Windows, macOS, Linux)
-- **Terminal**: Any terminal supporting ANSI escape codes
-
-### Performance Characteristics
-- **Async Runtime**: Built on Tokio for non-blocking operations
-- **Configurable Rates**: Customizable tick rates (default: 1Hz) and frame rates (default: 24fps)
-- **Memory Efficient**: Component hierarchy managed via `BTreeMap` with minimal allocations
-- **Event Batching**: Efficient event processing with batched action handling
-
-### Dependencies
-
-Core dependencies maintained for stability and performance:
-
-- `ratatui ^0.29.0` - Terminal UI rendering
-- `crossterm ^0.29.0` - Cross-platform terminal handling
-- `tokio ^1.47.1` - Async runtime
-- `anyhow ^1.0.99` - Error handling
-- `strum ^0.27.2` - Enum utilities
+- `Component`, `ComponentAccessor`, `App`, `Action`, `Event`, `KeyBindings`, `Theme`, `ThemeManager`
+- Macros: `#[component]`, `kb!`, `components!`
 
 ## Contributing
 
-We welcome contributions! Please ensure your contributions align with the project's goals of providing a robust, modular, and developer-friendly TUI framework.
-
-### Development Setup
-
-1. **Fork and clone** the repository
-2. **Install Rust** toolchain (2024 edition)
-3. **Run tests** to ensure everything works: `cargo test`
-4. **Create feature branch** from `main`
-5. **Make changes** following existing code patterns
-6. **Test thoroughly** including the example application
-7. **Submit pull request** with clear description
-
-### Guidelines
-
-- Follow existing code style and patterns
-- Add tests for new functionality
-- Update documentation for public APIs
-- Ensure CI passes (build + test)
-- Required: `Action::Quit` must be bound for graceful exit
-
-### Resources
-
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Detailed contribution guidelines
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Community standards
-- [GitHub Issues](https://github.com/mzyui/weavetui/issues) - Bug reports and feature requests
-- [Discussions](https://github.com/mzyui/weavetui/discussions) - Community support
+See [CONTRIBUTING.md](CONTRIBUTING.md). Ensure CI passes (`cargo build --verbose`, `cargo test --verbose`).
 
 ## License
 
-Licensed under the MIT License. See [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).
 
 ---
 

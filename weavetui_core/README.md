@@ -51,6 +51,8 @@
 - **`App`**: Main application orchestrator managing event loop and components
 - **`Tui`**: Terminal abstraction over `crossterm` and `ratatui`
 - **Configurable rates**: Customizable tick rates and frame rates
+- **Batched processing**: Events and actions are batched for efficiency
+- **Performance metrics**: Optional tracking of event/action throughput and FPS
 
 ## 📦 Installation
 
@@ -153,7 +155,8 @@ async fn main() -> anyhow::Result<()> {
         .with_keybindings(kb![
             "<ctrl-c>" => Action::Quit,
             "u" => "update_message"
-        ]);
+        ])
+        .with_performance_monitoring(true);
 
     app.run().await
 }
@@ -197,15 +200,25 @@ let advanced_bindings = kb![
 4. **Rendering**: `draw()` renders component to terminal
 5. **Cleanup**: Automatic cleanup when component is dropped
 
-### Event Flow
+### Event/Action Flow and Batching
 ```
-Terminal Input → Event → KeyBindings → Action → Component.update() → Component.draw() → Terminal Output
+Terminal Input → Event queue (batched) → KeyBindings → Action queue (batched) → Component.update() → Component.draw() → Terminal Output
 ```
+- Events are queued and processed in batches up to `max_events_per_batch`
+- Actions produced by components and keybindings are also batched via `max_actions_per_batch`
+- Rendering can be triggered by Action::Render or frame scheduling
+
+### Performance Metrics
+- Enable via `.with_performance_monitoring(true)`
+- Metrics: events/actions processed, average batch sizes, total render/event processing time, FPS
 
 ### Theme Inheritance
 ```
 App Theme → Component Theme → Child Component Theme
 ```
+
+### Required Quit Binding
+- During initialization, App will error if `Action::Quit` is not bound to any key — bind e.g. `<ctrl-c>`.
 
 ## 💡 Best Practices
 

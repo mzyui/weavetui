@@ -35,10 +35,11 @@
 - **`#[component(children(...))]`**: Declarative child component management
 - **Zero boilerplate**: Focus on your component logic, not trait implementations
 
-### Smart Field Management
-- **Automatic field injection**: Adds required context fields if missing
-- **Child initialization**: Automatically initializes declared children in `Default` impl
-- **Debug support**: Maintains or adds `Debug` trait implementation
+### Redux Helpers (Macro-based)
+- **`state=Type`**: Attach a Redux state type implementing `AppState`
+- **`action=Type`**: Attach an action enum type
+- **`reducer=fn`**: Provide the reducer function signature `(state: &State, action: &Action) -> State`
+- **Generated helpers**: `.new(store)`, `.with_initial_state(...)`, `.dispatch(...)`, `.store()`, `.update_from_store()`, `.state()`
 
 ## 📦 Installation
 
@@ -59,256 +60,77 @@ weavetui = "0.1.2"
 
 ### Basic Component
 
-The simplest component with default draw implementation:
-
 ```rust
-use weavetui_derive::component;
+use weavetui::prelude::*;
 
 #[component(default)]
 pub struct SimpleComponent {
     pub message: String,
 }
-
-// That's it! The macro generates:
-// - ComponentAccessor implementation
-// - Component implementation with default draw()
-// - Default implementation
-// - Required _ctx field injection
-```
-
-### Custom Component with Draw
-
-Override the `draw` method for custom rendering:
-
-```rust
-use weavetui_derive::component;
-use weavetui_core::Component;
-use ratatui::{Frame, layout::Rect, widgets::{Block, Paragraph}};
-
-#[component]
-pub struct CustomComponent {
-    pub counter: i32,
-    pub title: String,
-}
-
-impl Component for CustomComponent {
-    fn draw(&mut self, f: &mut Frame<'_>, area: Rect) {
-        let block = Block::bordered().title(&self.title);
-        let text = format!("Counter: {}", self.counter);
-        f.render_widget(Paragraph::new(text).block(block), area);
-    }
-
-    fn on_event(&mut self, message: &str) {
-        match message {
-            "increment" => self.counter += 1,
-            "decrement" => self.counter -= 1,
-            "reset" => self.counter = 0,
-            _ => {}
-        }
-    }
-}
 ```
 
 ### Component with Children
 
-Define child components declaratively:
-
 ```rust
-use weavetui_derive::component;
-
-#[component(default)]
-pub struct Header {
-    pub title: String,
-}
-
-#[component(default)]
-pub struct Footer {
-    pub status: String,
-}
+use weavetui::prelude::*;
 
 #[component(children("header" => Header, "footer" => Footer))]
 pub struct MainLayout {
     pub content: String,
 }
+```
 
-impl Component for MainLayout {
-    fn draw(&mut self, f: &mut Frame<'_>, area: Rect) {
-        let chunks = Layout::vertical([
-            Constraint::Length(3),  // Header
-            Constraint::Min(0),     // Content
-            Constraint::Length(3),  // Footer
-        ]).split(area);
+### Redux Component
 
-        // Access children easily
-        if let Some(header) = self.child_mut("header") {
-            if let Some(header_comp) = header.downcast_mut::<Header>() {
-                header_comp.title = "Dynamic Title".to_string();
-            }
-            header.draw(f, chunks[0]);
-        }
+```rust
+use weavetui::prelude::*;
 
-        // Render main content
-        let content_block = Block::bordered().title("Content");
-        f.render_widget(Paragraph::new(&self.content).block(content_block), chunks[1]);
+#[derive(Clone, Debug, Default, PartialEq)]
+struct ToggleState { on: bool }
+impl AppState for ToggleState {}
+#[derive(Clone, Debug)] enum ToggleAction { Toggle }
+fn reducer(s:&ToggleState,a:&ToggleAction)->ToggleState{ match a { ToggleAction::Toggle=>ToggleState{on:!s.on} } }
 
-        // Draw footer
-        if let Some(footer) = self.child_mut("footer") {
-            footer.draw(f, chunks[2]);
-        }
-    }
+#[component(state=ToggleState, action=ToggleAction, reducer=reducer)]
+pub struct Toggle;
+
+impl Component for Toggle {
+    fn on_event(&mut self, msg:&str) { if msg=="toggle" { self.dispatch(ToggleAction::Toggle); } }
 }
 ```
 
-### Complex Component with Multiple Features
-
-Combine all features for complex components:
+### Inject a Shared Store into Children
 
 ```rust
-use weavetui_derive::component;
-use weavetui_core::{Component, event::Action};
-use ratatui::{Frame, layout::Rect, widgets::*};
+use weavetui::prelude::*;
 
-#[component(default)]
-pub struct StatusBar;
+#[component(state=ToggleState, action=ToggleAction, reducer=reducer)]
+pub struct ChildToggle;
 
-#[component(default)]
-pub struct Sidebar;
+#[component(children("child" => ChildToggle))]
+pub struct Parent;
 
-#[component(children("status" => StatusBar, "sidebar" => Sidebar))]
-pub struct MainApp {
-    pub current_view: String,
-    pub user_name: String,
-    pub notifications: Vec<String>,
-}
-
-impl Component for MainApp {
-    fn draw(&mut self, f: &mut Frame<'_>, area: Rect) {
-        let main_chunks = Layout::horizontal([
-            Constraint::Length(20), // Sidebar
-            Constraint::Min(0),     // Main content
-        ]).split(area);
-
-        let right_chunks = Layout::vertical([
-            Constraint::Min(0),     // Content
-            Constraint::Length(3),  // Status bar
-        ]).split(main_chunks[1]);
-
-        // Draw sidebar
-        if let Some(sidebar) = self.child_mut("sidebar") {
-            sidebar.draw(f, main_chunks[0]);
-        }
-
-        // Draw main content with theme colors
-        let primary_color = self.get_color("primary");
-        let main_block = Block::bordered()
-            .title(&self.current_view)
-            .border_style(Style::default().fg(primary_color));
-
-        f.render_widget(main_block, right_chunks[0]);
-
-        // Draw status bar
-        if let Some(status) = self.child_mut("status") {
-            status.draw(f, right_chunks[1]);
-        }
-    }
-
-    fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) -> Option<Action> {
-        use crossterm::event::{KeyCode, KeyModifiers};
-
-        match (key.modifiers, key.code) {
-            (KeyModifiers::CONTROL, KeyCode::Char('n')) => {
-                self.notifications.push("New notification!".to_string());
-                Some(Action::AppAction("refresh_ui".to_string()))
-            }
-            (KeyModifiers::ALT, KeyCode::Char('v')) => {
-                self.current_view = "Alternative View".to_string();
-                None
-            }
-            _ => None
-        }
-    }
-
-    fn on_event(&mut self, message: &str) {
-        match message {
-            "switch_view" => self.current_view = "Switched View".to_string(),
-            "clear_notifications" => self.notifications.clear(),
-            _ => {}
+impl Component for Parent {
+    fn init(&mut self, _area: Rect) {
+        let store = Store::new(ToggleState::default(), reducer);
+        if let Some(child) = self.get_children().get_mut("child") {
+            *child = Box::new(ChildToggle::new(store));
         }
     }
 }
 ```
 
-## 🏗️ Macro Attributes
+## ⚠️ Notes & Gotchas
 
-### `#[component]`
-Basic component with manual `draw()` implementation required.
-
-### `#[component(default)]`
-Generates a default `draw()` method that displays component name and dimensions in a bordered box.
-
-### `#[component(children("name" => Type, ...))]`
-Declares child components that will be automatically initialized in the `Default` implementation.
-
-```rust
-#[component(children(
-    "header" => HeaderComponent,
-    "content" => ContentComponent,
-    "footer" => FooterComponent
-))]
-pub struct Layout {
-    pub theme: String,
-}
-```
-
-### Combined Attributes
-```rust
-#[component(default, children("child1" => ChildType, "child2" => AnotherType))]
-pub struct ComplexComponent;
-```
-
-## 🔍 Generated Code
-
-The macro automatically generates:
-
-### Injected Fields
-If not present, these fields are automatically added:
-```rust
-pub _ctx: weavetui_core::ComponentContext
-```
-
-### ComponentAccessor Implementation
-```rust
-impl ComponentAccessor for YourComponent {
-    fn name(&self) -> String { /* ... */ }
-    fn area(&self) -> Option<Rect> { /* ... */ }
-    fn set_area(&mut self, area: Rect) { /* ... */ }
-    fn is_active(&self) -> bool { /* ... */ }
-    fn set_active(&mut self, active: bool) { /* ... */ }
-    fn register_action_handler(&mut self, tx: UnboundedSender<Action>) { /* ... */ }
-    fn send(&self, action: &str) { /* ... */ }
-    fn send_action(&self, action: Action) { /* ... */ }
-    fn get_children(&mut self) -> &mut Children { /* ... */ }
-    fn get_theme_manager(&self) -> &ThemeManager { /* ... */ }
-    fn set_theme_manager(&mut self, tm: ThemeManager) { /* ... */ }
-}
-```
-
-### Default Implementation
-```rust
-impl Default for YourComponent {
-    fn default() -> Self {
-        // Initializes _ctx and declared children
-    }
-}
-```
+- Do not combine `#[component(default)]` with a manual `impl Component for ...` that defines `draw()` — this will cause conflicts.
+- Always import `ComponentAccessor` when manually interacting with child components.
+- Ensure `Action::Quit` is bound in your App keybindings before running (`<ctrl-c>` recommended).
 
 ## 💡 Best Practices
 
-- **Use `weavetui::prelude::*`** to access all necessary types and re-exported macros
-- **Prefer `#[component]`** over manual trait implementation for consistency
-- **Use `#[component(default)]`** for rapid prototyping and placeholder components
-- **Leverage children declarations** for complex nested component hierarchies
-- **Access theme colors** via `self.get_color("color_name")` in your components
+- Use `weavetui::prelude::*` for concise imports and macro access.
+- Prefer macro-based Redux components when you need `dispatch()`/`store()` helpers.
+- Forward parent actions/messages to children as needed; children can call `.dispatch(...)` if Redux-enabled.
 
 ## 🔗 Related Crates
 
