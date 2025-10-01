@@ -10,6 +10,7 @@ pub mod event;
 pub mod internal;
 pub mod keyboard;
 pub mod macros;
+pub mod redux;
 pub mod theme;
 pub mod tui;
 
