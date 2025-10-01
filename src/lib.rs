@@ -48,10 +48,11 @@ pub mod prelude {
         event::{Action, Event},
         kb,
         keyboard::{KeyBindings, key_event_to_string},
+        redux::{AppState, Store, StoreConnection, ActionStore, ActionStoreConnection},
         tui::Tui,
     };
     pub use weavetui_derive::component;
 }
 
-pub use weavetui_core::{Component, ComponentAccessor, app, components, event, kb, keyboard, tui};
+pub use weavetui_core::{Component, ComponentAccessor, app, components, event, kb, keyboard, redux, tui};
 pub use weavetui_derive::component;
